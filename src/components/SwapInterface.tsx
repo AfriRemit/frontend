@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowUpDown, Settings, Info, X } from 'lucide-react';
+import { ArrowUpDown, Settings, Info, X, Droplets } from 'lucide-react';
+import LiquidityInterface from './LiquidityInterface';
 
 const SwapInterface = () => {
+  const [activeTab, setActiveTab] = useState('swap');
   const [fromToken, setFromToken] = useState('ETH');
   const [toToken, setToToken] = useState('AFRC');
   const [fromAmount, setFromAmount] = useState('');
@@ -56,11 +58,40 @@ const SwapInterface = () => {
     return tokens.find(t => t.symbol === symbol)?.balance || 0;
   };
 
+  if (activeTab === 'liquidity') {
+    return <LiquidityInterface />;
+  }
+
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-stone-800 mb-2">Swap Tokens</h1>
         <p className="text-stone-600">Exchange tokens at the best rates</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-stone-100 rounded-lg p-1">
+        <button
+          onClick={() => setActiveTab('swap')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'swap'
+              ? 'bg-white text-stone-900 shadow-sm'
+              : 'text-stone-600 hover:text-stone-900'
+          }`}
+        >
+          Swap
+        </button>
+        <button
+          onClick={() => setActiveTab('liquidity')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center space-x-1 ${
+            activeTab === 'liquidity'
+              ? 'bg-white text-stone-900 shadow-sm'
+              : 'text-stone-600 hover:text-stone-900'
+          }`}
+        >
+          <Droplets className="w-4 h-4" />
+          <span>Liquidity</span>
+        </button>
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">

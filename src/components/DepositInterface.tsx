@@ -57,7 +57,7 @@ const DepositInterface = () => {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-stone-800 mb-2">Deposit Funds</h1>
-        <p className="text-stone-600">Add money to your Afriremit wallet</p>
+        <p className="text-stone-600">Add money to your AfriRemit wallet</p>
       </div>
 
       {/* Currency Selection */}

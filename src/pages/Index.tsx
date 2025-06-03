@@ -9,6 +9,8 @@ import FamilyTransfers from '../components/FamilyTransfers';
 import ReferralSystem from '../components/ReferralSystem';
 import WithdrawalInterface from '../components/WithdrawalInterface';
 import DepositInterface from '../components/DepositInterface';
+import Profile from '../components/Profile';
+import Faucet from '../components/Faucet';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -31,6 +33,10 @@ const Index = () => {
         return <WithdrawalInterface />;
       case 'deposit':
         return <DepositInterface />;
+      case 'profile':
+        return <Profile />;
+      case 'faucet':
+        return <Faucet />;
       default:
         return <Dashboard onPageChange={setCurrentPage} />;
     }
