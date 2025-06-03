@@ -5,7 +5,7 @@ import { Share2, Gift, Users, Copy, Check } from 'lucide-react';
 const ReferralSystem = () => {
   const [copied, setCopied] = useState(false);
   const referralCode = "AFRI2024JD";
-  const referralLink = `https://afriflow.app/ref/${referralCode}`;
+  const referralLink = `https://afriRemit.app/ref/${referralCode}`;
   
   const referralStats = {
     totalReferred: 12,
@@ -27,13 +27,13 @@ const ReferralSystem = () => {
   };
 
   const shareToWhatsApp = () => {
-    const message = `Join me on AfriFlow and earn rewards! Use my referral code: ${referralCode} or click: ${referralLink}`;
+    const message = `Join me on AfriRemit and earn rewards! Use my referral code: ${referralCode} or click: ${referralLink}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   const shareToTwitter = () => {
-    const message = `Join me on AfriFlow, the best cross-border money app for Africa! 🌍💰 Use my referral code: ${referralCode}`;
+    const message = `Join me on AfriRemit, the best cross-border money app for Africa! 🌍💰 Use my referral code: ${referralCode}`;
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(referralLink)}`;
     window.open(twitterUrl, '_blank');
   };
@@ -41,8 +41,8 @@ const ReferralSystem = () => {
   const shareGeneric = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Join AfriFlow',
-        text: `Join me on AfriFlow and earn rewards! Use my referral code: ${referralCode}`,
+        title: 'Join AfriRemit',
+        text: `Join me on AfriRemit and earn rewards! Use my referral code: ${referralCode}`,
         url: referralLink,
       });
     } else {

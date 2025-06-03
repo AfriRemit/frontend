@@ -50,8 +50,8 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
       <div className="bg-white border-b border-stone-200 h-16 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between h-full px-4 lg:px-8 max-w-7xl mx-auto">
           {/* Logo */}
-          <div className="flex items-center space-x-8">
-            <span className="font-bold text-xl text-stone-800">AfriFlow</span>
+          <div className="flex items-center  space-x-8">
+            <span className="font-bold text-terracotta text-2xl text-stone-800">AfriRemit</span>
             
             {/* Desktop Navigation - Centered */}
             <nav className="hidden lg:flex items-center justify-center flex-1 max-w-4xl mx-auto">
@@ -151,7 +151,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
           <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setSidebarOpen(false)}>
             <div className="fixed inset-y-0 left-0 w-3/4 bg-white p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
-                <span className="font-bold text-xl text-stone-800">AfriFlow</span>
+                <span className="font-bold text-xl text-stone-800">AfriRemit</span>
                 <button onClick={() => setSidebarOpen(false)}>
                   <X className="w-6 h-6 text-stone-700" />
                 </button>
