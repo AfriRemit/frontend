@@ -46,7 +46,6 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { name: 'Swap', key: 'swap', icon: ArrowLeftRight },
     { name: 'Save & Earn', key: 'savings', icon: PiggyBank },
     { name: 'Family Pay', key: 'family', icon: Users },
-    { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
     { name: 'Faucet', key: 'faucet', icon: Droplets },
   ];
 
