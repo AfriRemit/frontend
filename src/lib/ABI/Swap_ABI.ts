@@ -8,7 +8,7 @@ export const SWAP_ABI=[
 			},
 			{
 				"internalType": "address",
-				"name": "_BENZ_TOKEN_ADDRESS",
+				"name": "_AFRI_COIN",
 				"type": "address"
 			}
 		],
@@ -134,8 +134,27 @@ export const SWAP_ABI=[
 		"type": "event"
 	},
 	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "Received",
+		"type": "event"
+	},
+	{
 		"inputs": [],
-		"name": "BENZ_TOKEN_ADDRESS",
+		"name": "AFRI_COIN",
 		"outputs": [
 			{
 				"internalType": "address",
@@ -664,5 +683,9 @@ export const SWAP_ABI=[
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ]

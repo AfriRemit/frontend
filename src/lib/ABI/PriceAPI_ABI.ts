@@ -1,24 +1,46 @@
 export const PRICE_ABI=[
 	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
 				"internalType": "address",
-				"name": "_BENZ_TOKEN_ADDRESS",
+				"name": "token",
 				"type": "address"
 			},
 			{
-				"internalType": "address[]",
-				"name": "_tokenAddresses",
-				"type": "address[]"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "_prices",
-				"type": "uint256[]"
+				"indexed": true,
+				"internalType": "address",
+				"name": "mockAggregator",
+				"type": "address"
 			}
 		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
+		"name": "MockAggregatorCreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "aggregator",
+				"type": "address"
+			}
+		],
+		"name": "OracleSet",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -59,6 +81,25 @@ export const PRICE_ABI=[
 		"type": "event"
 	},
 	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newPrice",
+				"type": "uint256"
+			}
+		],
+		"name": "PriceUpdated",
+		"type": "event"
+	},
+	{
 		"inputs": [],
 		"name": "NATIVE_TOKEN",
 		"outputs": [
@@ -81,39 +122,24 @@ export const PRICE_ABI=[
 	{
 		"inputs": [
 			{
-				"internalType": "address[]",
-				"name": "_tokenDesired",
-				"type": "address[]"
-			}
-		],
-		"name": "areTokensTradeable",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "isTrue",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "address",
 				"name": "_tokenAddress",
 				"type": "address"
-			}
-		],
-		"name": "checkTokenTradeable",
-		"outputs": [
+			},
 			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
+				"internalType": "int256",
+				"name": "_initialPrice",
+				"type": "int256"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_decimals",
+				"type": "uint8"
 			}
 		],
-		"stateMutability": "view",
+		"name": "createMockAggregator",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -135,6 +161,44 @@ export const PRICE_ABI=[
 			}
 		],
 		"name": "estimate",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			}
+		],
+		"name": "getAggregator",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			}
+		],
+		"name": "getLatestPrice",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -178,34 +242,22 @@ export const PRICE_ABI=[
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "getTradeableTokenAddresses",
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			}
+		],
+		"name": "isUsingOracle",
 		"outputs": [
 			{
-				"internalType": "address[]",
+				"internalType": "bool",
 				"name": "",
-				"type": "address[]"
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address[]",
-				"name": "_tokenAddresses",
-				"type": "address[]"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "_prices",
-				"type": "uint256[]"
-			}
-		],
-		"name": "markTokenAsTradeable",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -225,6 +277,80 @@ export const PRICE_ABI=[
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_aggregatorAddress",
+				"type": "address"
+			}
+		],
+		"name": "setAggregator",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "_useOracle",
+				"type": "bool"
+			}
+		],
+		"name": "togglePriceSource",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "tokenToAggregator",
+		"outputs": [
+			{
+				"internalType": "contract AggregatorV3Interface",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "tokenToMockAggregator",
+		"outputs": [
+			{
+				"internalType": "contract MockV3Aggregator",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "to",
 				"type": "address"
 			}
@@ -232,6 +358,43 @@ export const PRICE_ABI=[
 		"name": "transferOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "int256",
+				"name": "_newPrice",
+				"type": "int256"
+			}
+		],
+		"name": "updateMockPrice",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "useOracle",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	}
 ]

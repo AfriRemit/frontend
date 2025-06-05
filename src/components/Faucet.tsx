@@ -1,232 +1,175 @@
+import React, { useState,useEffect } from 'react';
+import { ArrowUpDown, Settings, Info, X, Droplets } from 'lucide-react';
+import { addTokenToMetamask } from '@/lib/utils.ts';
 
-import React, { useState } from 'react';
-import { Droplets, Clock, CheckCircle, AlertCircle, Wallet, Copy } from 'lucide-react';
+import tokens from '@/lib/Tokens/tokens';
+import { ethers, formatEther, parseEther } from 'ethers';
+import { useContractInstances } from '@/provider/ContractInstanceProvider';
 
-const Faucet = () => {
-  const [claimStatus, setClaimStatus] = useState<'idle' | 'claiming' | 'success' | 'error'>('idle');
-  const [lastClaim, setLastClaim] = useState<string | null>(null);
-  const [nextClaimTime, setNextClaimTime] = useState<string | null>(null);
-  const [walletAddress, setWalletAddress] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
 
-  const faucetInfo = {
-    dailyLimit: 100,
-    claimed: 25,
-    nextClaimIn: '18h 32m',
-    totalUsers: 12845,
-    totalDistributed: '2.5M'
-  };
 
-  const handleConnectWallet = () => {
-    // Simulate wallet connection
-    setIsConnected(true);
-    setWalletAddress('0x742d35Cc6cF55532a7532687d391c5f5C3F4a9e3');
-  };
+const roundToTwoDecimalPlaces = (num) => {
+  return Math.round(num * 100) / 100;
+};
 
-  const handleClaimTokens = async () => {
-    if (!isConnected && !walletAddress) {
-      setClaimStatus('error');
-      setTimeout(() => setClaimStatus('idle'), 3000);
-      return;
-    }
+const roundToFiveDecimalPlaces = (num) => {
+  return Math.round(num * 100000) / 100000;
+};
 
-    setClaimStatus('claiming');
+const FaucetInterface = () => {
+  const { isConnected,  TEST_TOKEN_CONTRACT_INSTANCE, fetchBalance, address } = useContractInstances()
+ 
+  const [fromToken, setFromToken] = useState('ETH');
+    const[isFaucet,setFaucet]=useState(false)
+   
+  const [toToken, setToToken] = useState('AFR');
+   const token1Address = tokens.find(t => t.symbol === fromToken)?.address;
+    const token2Address = tokens.find(t => t.symbol === toToken)?.address;
+
+
+
+   const [token1Amount, setToken1Amount] = useState(null);
+
+ 
+ 
+  const[Bal1,setBal1] = useState(0)
+
+
+
+
+  
+useEffect(()=>{
+  const fetchData = async () => {
+    try {
+      console.log('Fetching balances and rates...', token1Address, token2Address);
+      const bal1 = await fetchBalance(token1Address);
+      const bal2 = await fetchBalance(token2Address);
+      const roundedBal1 = roundToTwoDecimalPlaces(bal1)
+      const roundedBal2 = roundToTwoDecimalPlaces(bal2)
     
-    // Simulate API call
-    setTimeout(() => {
-      setClaimStatus('success');
-      setLastClaim(new Date().toISOString());
-      setNextClaimTime(new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()); // 24 hours from now
-      setTimeout(() => setClaimStatus('idle'), 3000);
-    }, 2000);
+      
+      setBal1(roundedBal1)
+     
+    
+  
+
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const canClaim = claimStatus === 'idle' && !nextClaimTime && (isConnected || walletAddress);
+  fetchData();
 
-  const copyAddress = () => {
-    navigator.clipboard.writeText(walletAddress);
-  };
+},[isConnected,fromToken])
+
+
+
+    const getFaucet=async()=>{
+   
+      try{
+        
+         const TOKEN_CONTRACT=await TEST_TOKEN_CONTRACT_INSTANCE(token1Address);
+          const   GET_FAUCET =await TOKEN_CONTRACT.faucet(token1Amount);
+          setFaucet(true) 
+          console.log(`Loading - ${GET_FAUCET.hash}`);
+               await GET_FAUCET.wait();
+               console.log(`Success - ${GET_FAUCET.hash}`);
+               setFaucet(false);
+      }catch(error){
+       setFaucet(false);
+     console.log(error)
+    
+  }
+}
 
   return (
-    <div className="space-y-6">
-      <div className="text-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Droplets className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold text-stone-800 mb-2">AFRI Token Faucet</h2>
-        <p className="text-stone-600 mb-6">
-          Claim free AFRI tokens for testing and experiencing the platform
-        </p>
-        
-        <div className="bg-white rounded-xl p-6 mb-6">
-          {/* Wallet Connection Section */}
-          {!isConnected && (
-            <div className="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-semibold text-stone-800 mb-4 flex items-center space-x-2">
-                <Wallet className="w-5 h-5 text-blue-600" />
-                <span>Connect Your Wallet</span>
-              </h4>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-2">
-                    Wallet Address (Optional - you can also connect wallet)
-                  </label>
-                  <input
-                    type="text"
-                    value={walletAddress}
-                    onChange={(e) => setWalletAddress(e.target.value)}
-                    placeholder="0x742d35Cc6cF55532a7532687d391c5f5C3F4a9e3"
-                    className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-stone-600 text-sm mb-3">Or</p>
-                  <button
-                    onClick={handleConnectWallet}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                  >
-                    Connect Wallet
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Connected Wallet Display */}
-          {isConnected && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-green-700 font-medium">Wallet Connected</span>
-                </div>
-                <button
-                  onClick={copyAddress}
-                  className="flex items-center space-x-2 text-green-600 hover:text-green-700"
-                >
-                  <span className="text-sm font-mono">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span>
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{faucetInfo.dailyLimit}</p>
-              <p className="text-stone-600 text-sm">Daily Limit</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{faucetInfo.claimed}</p>
-              <p className="text-stone-600 text-sm">Claimed Today</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600">{faucetInfo.totalUsers.toLocaleString()}</p>
-              <p className="text-stone-600 text-sm">Total Users</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">{faucetInfo.totalDistributed}</p>
-              <p className="text-stone-600 text-sm">Total Distributed</p>
-            </div>
-          </div>
-
-          {claimStatus === 'success' && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-green-700">Successfully claimed 25 AFRI tokens!</span>
-            </div>
-          )}
-
-          {claimStatus === 'error' && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-              <span className="text-red-700">Please connect your wallet or provide a wallet address to claim tokens.</span>
-            </div>
-          )}
-
-          {nextClaimTime && (
-            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center space-x-3">
-              <Clock className="w-5 h-5 text-yellow-600" />
-              <span className="text-yellow-700">Next claim available in: {faucetInfo.nextClaimIn}</span>
-            </div>
-          )}
-
-          <button
-            onClick={handleClaimTokens}
-            disabled={!canClaim}
-            className={`w-full py-4 rounded-xl font-semibold transition-all duration-200 ${
-              canClaim
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg'
-                : 'bg-stone-200 text-stone-500 cursor-not-allowed'
-            }`}
-          >
-            {claimStatus === 'claiming' ? (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Claiming Tokens...</span>
-              </div>
-            ) : canClaim ? (
-              'Claim 25 AFRI Tokens'
-            ) : !isConnected && !walletAddress ? (
-              'Connect Wallet to Claim'
-            ) : (
-              'Claim Limit Reached'
-            )}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-          <div className="bg-blue-50 rounded-xl p-4">
-            <h4 className="font-semibold text-stone-800 mb-2">How it works</h4>
-            <ul className="text-stone-600 text-sm space-y-1">
-              <li>• Connect wallet or provide address</li>
-              <li>• Claim up to 100 AFRI tokens daily</li>
-              <li>• Use tokens to test all platform features</li>
-              <li>• Reset every 24 hours</li>
-            </ul>
-          </div>
-          <div className="bg-indigo-50 rounded-xl p-4">
-            <h4 className="font-semibold text-stone-800 mb-2">Fair Usage</h4>
-            <ul className="text-stone-600 text-sm space-y-1">
-              <li>• One claim per wallet per day</li>
-              <li>• Tokens are for testing only</li>
-              <li>• Help us improve the platform</li>
-              <li>• Report bugs and issues</li>
-            </ul>
-          </div>
-        </div>
+    <div className="max-w-lg mx-auto space-y-6">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-stone-800 mb-2">Faucet</h1>
+        <p className="text-stone-600">Get AfriRemit Testnet Tokens</p>
       </div>
 
-      {/* Recent Claims */}
+     
+
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-        <h3 className="text-lg font-semibold text-stone-800 mb-4">Recent Claims</h3>
-        <div className="space-y-3">
-          {[
-            { amount: 25, time: '2 hours ago', status: 'completed', wallet: '0x742d...a9e3' },
-            { amount: 25, time: '1 day ago', status: 'completed', wallet: '0x742d...a9e3' },
-            { amount: 25, time: '2 days ago', status: 'completed', wallet: '0x742d...a9e3' }
-          ].map((claim, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Droplets className="w-4 h-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-stone-800">+{claim.amount} AFRI</p>
-                  <p className="text-stone-500 text-sm">{claim.wallet} • {claim.time}</p>
-                </div>
-              </div>
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                {claim.status}
+       
+
+       
+
+        {/* From Token */}
+        <div className="space-y-4">
+          <div className="bg-stone-50 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-2">
+             
+                    {address && !isNaN(Bal1) && (
+              <span className="text-stone-500 text-sm">
+                Balance: {Bal1} {fromToken}
               </span>
+                    )}
             </div>
-          ))}
+            
+            <div className="flex items-center space-x-3">
+           <input
+  type="number"
+  disabled={!isConnected}
+  value={token1Amount}
+  onChange={(e) => setToken1Amount(e.target.value)}
+  className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none"
+  placeholder="0.0"
+/>
+
+              
+              <select
+                value={fromToken}
+                onChange={(e) => setFromToken(e.target.value)}
+                className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium"
+              >
+               {tokens
+  .filter(token => token.symbol !== 'ETH')
+  .map(token => (
+    <option key={token.symbol} value={token.symbol}>
+      {token.symbol}
+    </option>
+))}
+
+              </select>
+            </div>
+            
+            <button 
+              disabled={true}
+              className="text-terracotta text-sm mt-2 hover:underline"
+            >
+              Max Faucet: 100 {fromToken}
+            </button>
+          </div>
+
+         
+
+        
         </div>
+
+
+        {/* Swap Button */}
+<button
+disabled={!isConnected || !token1Amount || isFaucet}
+  onClick={getFaucet}
+  className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+ {isFaucet ? 'Getting Faucet' : 'Get Faucet'}
+</button>
+
+<button
+  onClick={() => addTokenToMetamask(token1Address, fromToken, 18)}
+  className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+Add to Metamask
+</button>
+
       </div>
+
+    
     </div>
   );
 };
 
-export default Faucet;
+export default FaucetInterface;

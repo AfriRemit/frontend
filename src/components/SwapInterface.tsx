@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { ArrowUpDown, Settings, Info, X, Droplets } from 'lucide-react';
 import LiquidityInterface from './LiquidityInterface';
+import tokens from '@/lib/Tokens/tokens';
+import { ethers, formatEther, parseEther } from 'ethers';
+import { useContractInstances } from '@/provider/ContractInstanceProvider';
+import { CONTRACT_ADDRESSES } from '@/provider/ContractInstanceProvider';
+
+
+const roundToTwoDecimalPlaces = (num) => {
+  return Math.round(num * 100) / 100;
+};
+
+const roundToFiveDecimalPlaces = (num) => {
+  return Math.round(num * 100000) / 100000;
+};
 
 const SwapInterface = () => {
+  const { isConnected, SWAP_CONTRACT_INSTANCE, PRICEAPI_CONTRACT_INSTANCE, TEST_TOKEN_CONTRACT_INSTANCE, fetchBalance, address } = useContractInstances()
   const [activeTab, setActiveTab] = useState('swap');
   const [fromToken, setFromToken] = useState('ETH');
-  const [toToken, setToToken] = useState('AFRC');
+   
+  const [toToken, setToToken] = useState('AFR');
+   const token1Address = tokens.find(t => t.symbol === fromToken)?.address;
+    const token2Address = tokens.find(t => t.symbol === toToken)?.address;
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [slippage, setSlippage] = useState(0.5);
@@ -13,11 +30,155 @@ const SwapInterface = () => {
   const [deadline, setDeadline] = useState(20);
   const [autoRouter, setAutoRouter] = useState(true);
 
-  const tokens = [
-    { symbol: 'ETH', name: 'Ethereum', balance: 0.5 },
-    { symbol: 'USDC', name: 'USD Coin', balance: 1000 },
-    { symbol: 'AFRC', name: 'AfriCoin', balance: 1250 },
-  ];
+
+   const [token1Amount, setToken1Amount] = useState(null);
+  const [token2Amount, setToken2Amount] = useState(null);
+
+  const[isApproveOne,setApproveOne]=useState(false)
+  
+  const [hasApprovedOne,setHasApprovedOne]= useState(false)
+  const[isSwapping,setSwapping]=useState(false)
+  const [isOpen, setIsOpen] = useState(false);
+  const [AmountOneInWei,setAmountOneInWei]=useState('')
+  const [AmountTwoRate,setAmountTwoRate]=useState('')
+  const [changeToken, setChangeToken] = useState(1);
+  const[Bal1,setBal1] = useState(0)
+  const[Bal2,setBal2] = useState(0)
+  const[dollarRate,setDollarRate]= useState(null)
+  const[baseTwoRate,setBaseTwoRate]=useState(null)
+  const[isEstimateAmount2,setEstimatedAmount2]=useState(false)
+
+
+  
+useEffect(()=>{
+  const fetchData = async () => {
+    try {
+      console.log('Fetching balances and rates...', token1Address, token2Address);
+      const bal1 = await fetchBalance(token1Address);
+      const bal2 = await fetchBalance(token2Address);
+      const roundedBal1 = roundToTwoDecimalPlaces(bal1)
+      const roundedBal2 = roundToTwoDecimalPlaces(bal2)
+    
+      
+      setBal1(roundedBal1)
+      setBal2(roundedBal2)
+      const PRICE_CONTRACT= await PRICEAPI_CONTRACT_INSTANCE();
+    
+  
+      
+      const dollarRate= await PRICE_CONTRACT.getLatestPrice(token1Address);
+     
+      const formattedDollarRate= ethers.formatEther(dollarRate)
+    
+      setDollarRate(formattedDollarRate)
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchData();
+
+},[isConnected,fromToken,toToken,address,Bal1,Bal2,dollarRate,setDollarRate,PRICEAPI_CONTRACT_INSTANCE])
+
+
+  const calculateAmount2 = async () => {
+    if (token1Amount !== null) {
+      setEstimatedAmount2(true);
+      const PRICE_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
+      
+      const TokenAmountInWei: any = ethers.parseEther(token1Amount);
+
+      
+     
+      try {
+        const rate = await PRICE_CONTRACT.estimate(
+          token1Address,
+          token2Address,
+          TokenAmountInWei
+         
+        );
+      
+        const f_rate:any = ethers.formatEther(rate);
+
+        const swapFee = (20 / 1000) * f_rate;
+      
+
+        const amountTwoToReceive = f_rate - swapFee
+        const roundedAmount = parseFloat(amountTwoToReceive.toFixed(9));
+        
+        setToken2Amount(roundedAmount);
+        setAmountOneInWei(TokenAmountInWei);
+        ///======  ESTIMATING TWO TO ONE =====//
+        
+        const Amount2InWei= ethers.parseEther("1");
+        const rateToExchangeTwotoOne= await PRICE_CONTRACT.estimate(
+          token2Address,
+          token1Address,
+          Amount2InWei
+
+        )
+        const formattedTwoRate = ethers.formatEther(rateToExchangeTwotoOne);
+
+        setBaseTwoRate(formattedTwoRate)
+        
+        setAmountTwoRate(rateToExchangeTwotoOne);
+        
+       
+       
+       
+        
+       
+        
+
+      } catch (error) {
+        console.error(error);
+        setToken2Amount(null);
+      } finally {
+        setEstimatedAmount2(false);
+      }
+    } else {
+      // If amount1 is null, set amount2 to null
+      setToken2Amount(null);
+      setEstimatedAmount2(false);
+    }
+  };
+  
+  useEffect(() => {
+    calculateAmount2();
+  }, [SWAP_CONTRACT_INSTANCE,PRICEAPI_CONTRACT_INSTANCE,token1Amount,fromToken, toToken,baseTwoRate,setAmountOneInWei,setBaseTwoRate,setToken2Amount, setAmountTwoRate, setEstimatedAmount2]);
+
+  const estimate = (e) => {
+    const newValue = e.target.value;
+    setToken1Amount(newValue);
+  
+  
+    if (newValue !== token1Amount) {
+      calculateAmount2();
+    }
+  };
+
+
+  const ApproveTokenOne=async()=>{
+    
+      try{
+        const TEST_TOKEN_CONTRACT= await TEST_TOKEN_CONTRACT_INSTANCE(token1Address);  
+       const approveSpending =await TEST_TOKEN_CONTRACT.approve(CONTRACT_ADDRESSES.swapAddress,AmountOneInWei); 
+       console.log(`Loading - ${approveSpending.hash}`);
+       setApproveOne(true)
+        await approveSpending.wait();
+      console.log(`Success - ${approveSpending.hash}`);
+      setApproveOne(false)
+      setHasApprovedOne(true)
+      }catch(error){
+       setApproveOne(false)
+       console.log(error)
+      }
+
+   
+   
+   }
+
 
   const exchangeRates = {
     'ETH-AFRC': 2150,
@@ -27,6 +188,85 @@ const SwapInterface = () => {
     'ETH-USDC': 2150,
     'USDC-ETH': 0.000465,
   };
+
+
+
+   const SwapToken=async()=>{
+    
+    if(fromToken == 'ETH'){
+      try{
+        const SWAP_CONTRACT= await SWAP_CONTRACT_INSTANCE();  
+       const SWAP =await SWAP_CONTRACT.swap(token1Address,token2Address,AmountOneInWei,{
+            value: AmountOneInWei
+       }); 
+       console.log(`Loading - ${SWAP.hash}`);
+       setSwapping(true)
+        await SWAP.wait();
+      console.log(`Success - ${SWAP.hash}`);
+      setSwapping(false)
+      setHasApprovedOne(false)
+      setApproveOne(false)
+      setToken1Amount(null)
+      setToken2Amount(null)
+     
+      }catch(error){
+       setSwapping(false)
+           setHasApprovedOne(false)
+      setApproveOne(false)
+      setToken1Amount(null)
+      setToken2Amount(null)
+       console.log(error)
+      }
+     }else if(toToken == 'ETH' ){
+      try{
+        const SWAP_CONTRACT= await SWAP_CONTRACT_INSTANCE();  
+       const SWAP =await SWAP_CONTRACT.swap(token1Address,token2Address,AmountOneInWei); 
+       console.log(`Loading - ${SWAP.hash}`);
+       setSwapping(true)
+        await SWAP.wait();
+      console.log(`Success - ${SWAP.hash}`);
+      setSwapping(false)
+          setHasApprovedOne(false)
+      setApproveOne(false)
+      setToken1Amount(null)
+      setToken2Amount(null)
+      }catch(error){
+       setSwapping(false)
+           setHasApprovedOne(false)
+      setApproveOne(false)
+      setToken1Amount(null)
+      setToken2Amount(null)
+       console.log(error)
+      } 
+
+
+     }else{
+      try{
+        const SWAP_CONTRACT= await SWAP_CONTRACT_INSTANCE();  
+       const SWAP =await SWAP_CONTRACT.swap(token1Address,token2Address,AmountOneInWei); 
+       console.log(`Loading - ${SWAP.hash}`);
+       setSwapping(true)
+        await SWAP.wait();
+      console.log(`Success - ${SWAP.hash}`);
+      setSwapping(false)
+          setHasApprovedOne(false)
+      setApproveOne(false)
+      setToken1Amount(null)
+      setToken2Amount(null)
+      }catch(error){
+       setSwapping(false)
+           setHasApprovedOne(false)
+      setApproveOne(false)
+      setToken1Amount(null)
+      setToken2Amount(null)
+       console.log(error)
+      }
+
+     }
+    
+    
+   }
+
 
   const getCurrentRate = () => {
     const pair = `${fromToken}-${toToken}`;
@@ -39,9 +279,8 @@ const SwapInterface = () => {
     return (parseFloat(amount) * rate).toFixed(6);
   };
 
-  const handleFromAmountChange = (value: string) => {
-    setFromAmount(value);
-    setToAmount(calculateToAmount(value));
+  const handleFromAmountChange = () => {
+   setToken1Amount(Bal1)
   };
 
   const swapTokens = () => {
@@ -190,16 +429,19 @@ const SwapInterface = () => {
           <div className="bg-stone-50 rounded-xl p-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-stone-600 text-sm">From</span>
+                    {address && !isNaN(Bal1) && (
               <span className="text-stone-500 text-sm">
-                Balance: {getTokenBalance(fromToken)} {fromToken}
+                Balance: {Bal1} {fromToken}
               </span>
+                    )}
             </div>
             
             <div className="flex items-center space-x-3">
               <input
                 type="number"
-                value={fromAmount}
-                onChange={(e) => handleFromAmountChange(e.target.value)}
+                disabled={!isConnected}
+                 value={token1Amount}
+            onChange={estimate}
                 className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none"
                 placeholder="0.0"
               />
@@ -218,7 +460,7 @@ const SwapInterface = () => {
             </div>
             
             <button 
-              onClick={() => handleFromAmountChange(getTokenBalance(fromToken).toString())}
+              onClick={() => handleFromAmountChange()}
               className="text-terracotta text-sm mt-2 hover:underline"
             >
               Max
@@ -239,15 +481,17 @@ const SwapInterface = () => {
           <div className="bg-stone-50 rounded-xl p-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-stone-600 text-sm">To</span>
+               {address && !isNaN(Bal2) && (
               <span className="text-stone-500 text-sm">
-                Balance: {getTokenBalance(toToken)} {toToken}
+                Balance: {Bal2} {toToken}
               </span>
+               )}
             </div>
             
             <div className="flex items-center space-x-3">
               <input
                 type="number"
-                value={toAmount}
+                   value={token2Amount !== null ? token2Amount : ''}
                 readOnly
                 className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none text-stone-800"
                 placeholder="0.0"
@@ -269,7 +513,7 @@ const SwapInterface = () => {
         </div>
 
         {/* Swap Details */}
-        {fromAmount && (
+        {token1Amount && (
           <div className="mt-6 p-4 bg-stone-50 rounded-xl">
             <div className="flex items-center space-x-2 mb-3">
               <Info className="w-4 h-4 text-stone-500" />
@@ -277,10 +521,12 @@ const SwapInterface = () => {
             </div>
             
             <div className="space-y-2 text-sm">
+              {address && baseTwoRate &&
               <div className="flex justify-between">
                 <span className="text-stone-600">Exchange Rate</span>
-                <span className="font-medium">1 {fromToken} = {getCurrentRate()} {toToken}</span>
+                <span className="font-medium">1 {toToken} = {baseTwoRate} {fromToken}</span>
               </div>
+}
               <div className="flex justify-between">
                 <span className="text-stone-600">Slippage Tolerance</span>
                 <span className="font-medium">{slippage}%</span>
@@ -289,21 +535,55 @@ const SwapInterface = () => {
                 <span className="text-stone-600">Network Fee</span>
                 <span className="font-medium">~$2.50</span>
               </div>
+              {isConnected &&   <>
               <div className="flex justify-between">
                 <span className="text-stone-600">Minimum Received</span>
-                <span className="font-medium">{(parseFloat(toAmount) * (1 - slippage / 100)).toFixed(6)} {toToken}</span>
+                <span className="font-medium">{(parseFloat(token2Amount) * (1 - slippage / 100)).toFixed(6)} {toToken}</span>
               </div>
+              </>}
             </div>
           </div>
         )}
 
-        {/* Swap Button */}
+         {/* Approve Button */}
+
+          {fromToken != 'ETH' && (
         <button
-          disabled={!fromAmount || parseFloat(fromAmount) <= 0}
+        onClick={ApproveTokenOne}
+         disabled={isApproveOne || hasApprovedOne || !token1Amount}
           className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {!fromAmount ? 'Enter amount' : 'Swap Tokens'}
+         {isApproveOne ? 'Approving...' : 
+             hasApprovedOne ? '✓ Approved' : 
+             `Approve ${fromToken}`}
         </button>
+          )}
+
+        {/* Swap Button */}
+<button
+  onClick={SwapToken}
+  disabled={
+    !isConnected ||
+    !token1Amount ||
+    parseFloat(token1Amount) <= 0 ||
+    isSwapping ||
+    (fromToken !== 'ETH' && !hasApprovedOne)
+  }
+  className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {!isConnected
+    ? 'Connect Wallet'
+    : isSwapping
+    ? 'Swapping...'
+    : !token1Amount
+    ? 'Enter amount'
+    : fromToken !== 'ETH' && !hasApprovedOne
+    ? `Approve ${fromToken} First`
+    : 'Swap Tokens'}
+</button>
+
+
+
       </div>
 
       {/* Exchange Rate Widget */}

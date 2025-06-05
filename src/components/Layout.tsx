@@ -28,7 +28,16 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const { connectWallet, isConnected, address } = useContractInstances();
+  const { 
+    connectWallet, 
+    isConnected, 
+    address, 
+    resetWalletConnection,
+    isConnecting: providerConnecting 
+  } = useContractInstances();
+
+  // Use provider's connecting state if available, otherwise use local state
+  const actuallyConnecting = providerConnecting !== undefined ? providerConnecting : isConnecting;
 
   // Complete navigation list with all pages
   const navigation = [
@@ -37,7 +46,6 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { name: 'Swap', key: 'swap', icon: ArrowLeftRight },
     { name: 'Save & Earn', key: 'savings', icon: PiggyBank },
     { name: 'Family Pay', key: 'family', icon: Users },
-   
     { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
     { name: 'Faucet', key: 'faucet', icon: Droplets },
   ];
@@ -48,9 +56,10 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { id: 3, title: 'Family Transfer', message: 'Scheduled transfer to Mama Adunni processed.', time: '2 days ago', unread: false }
   ];
 
-  // Handle wallet connection with proper error handling
+  // Handle wallet connection with improved error handling
   const handleConnectWallet = async () => {
-    if (isConnected) return; // Already connected
+    // Prevent multiple simultaneous connection attempts
+    if (isConnected || actuallyConnecting) return;
     
     setIsConnecting(true);
     try {
@@ -60,21 +69,45 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
       setSidebarOpen(false);
     } catch (error: any) {
       console.error('Connection failed:', error);
-      // You can add toast notification here
-      alert(`Failed to connect wallet: ${error.message}`);
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to connect wallet';
+      
+      if (error.code === 4001 || error.message.includes('User rejected')) {
+        errorMessage = 'Connection cancelled by user';
+      } else if (error.message.includes('timed out') || error.message.includes('timeout')) {
+        errorMessage = 'Connection timed out. Please try again.';
+      } else if (error.message.includes('install MetaMask')) {
+        errorMessage = 'Please install MetaMask or another Web3 wallet';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Network switching failed. Please try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsConnecting(false);
     }
   };
 
+  // Handle manual reset for stuck connections
+  const handleResetConnection = () => {
+    if (resetWalletConnection) {
+      resetWalletConnection();
+    }
+    setIsConnecting(false);
+  };
+
   // Format address for display
   const formatAddress = (addr: string) => {
+    if (!addr) return '';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
   // Get wallet button text
   const getWalletButtonText = () => {
-    if (isConnecting) return 'Connecting...';
+    if (actuallyConnecting) return 'Connecting...';
     if (isConnected && address) return formatAddress(address);
     return 'Connect Wallet';
   };
@@ -184,20 +217,33 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
 
             {/* Wallet Connection with full functionality */}
             <div className="relative">
-              <button 
-                onClick={handleConnectWallet}
-                disabled={isConnecting || isConnected}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                  isConnected 
-                    ? 'bg-green-600 text-white cursor-default'
-                    : isConnecting
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-gradient-to-r from-terracotta to-sage text-white hover:shadow-lg cursor-pointer'
-                }`}
-              >
-                <Wallet className="w-4 h-4" />
-                <span>{getWalletButtonText()}</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={handleConnectWallet}
+                  disabled={actuallyConnecting || isConnected}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                    isConnected 
+                      ? 'bg-green-600 text-white cursor-default'
+                      : actuallyConnecting
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-gradient-to-r from-terracotta to-sage text-white hover:shadow-lg cursor-pointer'
+                  }`}
+                >
+                  <Wallet className="w-4 h-4" />
+                  <span>{getWalletButtonText()}</span>
+                </button>
+                
+                {/* Reset button for stuck connections */}
+                {actuallyConnecting && (
+                  <button
+                    onClick={handleResetConnection}
+                    className="text-xs text-gray-500 hover:text-gray-700 underline px-2 py-1 rounded"
+                    title="Cancel connection"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
               
               {/* Connection Status Indicator */}
               {isConnected && (
@@ -272,20 +318,32 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                 </button>
                 
                 {/* Mobile Wallet Connection */}
-                <button 
-                  onClick={handleConnectWallet}
-                  disabled={isConnecting || isConnected}
-                  className={`flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                    isConnected 
-                      ? 'bg-green-600 text-white cursor-default'
-                      : isConnecting
-                        ? 'bg-gray-400 text-white cursor-not-allowed'
-                        : 'bg-gradient-to-r from-terracotta to-sage text-white hover:shadow-lg cursor-pointer'
-                  }`}
-                >
-                  <Wallet className="w-5 h-5" />
-                  <span>{getWalletButtonText()}</span>
-                </button>
+                <div className="space-y-2">
+                  <button 
+                    onClick={handleConnectWallet}
+                    disabled={actuallyConnecting || isConnected}
+                    className={`flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                      isConnected 
+                        ? 'bg-green-600 text-white cursor-default'
+                        : actuallyConnecting
+                          ? 'bg-gray-400 text-white cursor-not-allowed'
+                          : 'bg-gradient-to-r from-terracotta to-sage text-white hover:shadow-lg cursor-pointer'
+                    }`}
+                  >
+                    <Wallet className="w-5 h-5" />
+                    <span>{getWalletButtonText()}</span>
+                  </button>
+                  
+                  {/* Mobile reset button for stuck connections */}
+                  {actuallyConnecting && (
+                    <button
+                      onClick={handleResetConnection}
+                      className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 underline rounded"
+                    >
+                      Cancel Connection
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
