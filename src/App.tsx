@@ -6,13 +6,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ContractInstanceProvider from "./provider/ContractInstanceProvider";
-
+import { wagmiConfig } from "./hooks/wagmi-config"; 
+import { WagmiProvider } from "wagmi";
 const queryClient = new QueryClient();
 
 const App = () => (
+
+<WagmiProvider config={wagmiConfig}>
+    <QueryClientProvider client={queryClient}>
   <ContractInstanceProvider>
 
-  <QueryClientProvider client={queryClient}>
+
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -24,9 +28,11 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
-    
+ 
     </ContractInstanceProvider>
+     </QueryClientProvider>
+     </WagmiProvider>
+    
 );
 
 export default App;

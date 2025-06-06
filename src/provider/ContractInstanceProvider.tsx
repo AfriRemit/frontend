@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { ethers, BrowserProvider } from 'ethers';
+import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from 'wagmi';
+import { injected } from 'wagmi/connectors';
 import { PRICE_ABI } from '../lib/ABI/PriceAPI_ABI.ts';
 import { Token_ABI} from '../lib/ABI/TestToken_ABI.ts';
 import { SWAP_ABI } from '../lib/ABI/Swap_ABI.ts';
@@ -8,24 +10,16 @@ import tokens from '@/lib/Tokens/tokens.ts';
 // Import or define the Token type
 import type { Token } from '@/lib/Tokens/tokens.ts';
 
-// Add this declaration to let TypeScript know about window.ethereum
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
-
-
-
 // Contract addresses - replace with your actual contract addresses
 export const CONTRACT_ADDRESSES = {
-  swapAddress: '0x1E6E21b0F8a9c6A0840c8CC3aa1b97f921027708', // Replace with actual Swap contract address
-  priceFeedAddress: '0x82683F9Fe41B395931a86CEF97D76CE3A737E704', // Replace with actual Price Feed contract address
+  swapAddress: '0x1E6E21b0F8a9c6A0840c8CC3aa1b97f921027708',
+  priceFeedAddress: '0x82683F9Fe41B395931a86CEF97D76CE3A737E704',
 };
 
+// Lisk Sepolia chain ID
+const LISK_SEPOLIA_CHAIN_ID = 4202;
 
-
-// Context interface
+// Context interface - keeping the same interface for backward compatibility
 interface ContractInstancesContextType {
   fetchBalance: (faucetAddress: string) => Promise<string | undefined>;
   SWAP_CONTRACT_INSTANCE: () => Promise<ethers.Contract | null>;
@@ -38,7 +32,6 @@ interface ContractInstancesContextType {
   tokenList: Token[];
   isConnected: boolean;
   isConnecting: boolean;
- 
   resetWalletConnection: () => void;
 }
 
@@ -48,216 +41,105 @@ interface ContractInstanceProviderProps {
   children: ReactNode;
 }
 
-// Lisk Sepolia network configuration 
-const LISK_SEPOLIA_CONFIG = { 
-  chainId: '0x106A', // 4202 in hex 
-  chainName: 'Lisk Sepolia Testnet', 
-  nativeCurrency: { 
-    name: 'Sepolia Ether', 
-    symbol: 'ETH', 
-    decimals: 18, 
-  }, 
-  rpcUrls: ['https://rpc.sepolia-api.lisk.com'], 
-  blockExplorerUrls: ['https://sepolia-blockscout.lisk.com'], 
-}; 
-
-// Create context
-const ContractInstanceContext = createContext<ContractInstancesContextType | undefined>(undefined);
-
-// Helper function to create timeout promise
-const createTimeoutPromise = (ms: number, errorMessage: string) => {
-  return new Promise((_, reject) => 
-    setTimeout(() => reject(new Error(errorMessage)), ms)
-  );
-};
-
 // Provider component
 export const ContractInstanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  // Wagmi hooks
+  const { address: wagmiAddress, isConnected: wagmiIsConnected, chain } = useAccount();
+  const { connect, status: connectStatus } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
+  const { data: balanceData } = useBalance({
+    address: wagmiAddress,
+  });
+
+  // Local state for ethers integration
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [address, setAddress] = useState('');
-  const [nativeBalance, setNativeBalance] = useState('0');
-  const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Connect wallet function with improved error handling
-  const connectWallet = async (): Promise<void> => { 
+  // Derived state from Wagmi - maintaining same interface
+  const address = wagmiAddress || null;
+  const isConnected = wagmiIsConnected && chain?.id === LISK_SEPOLIA_CHAIN_ID;
+  const nativeBalance = balanceData ? ethers.formatEther(balanceData.value.toString()) : '0';
+
+  // Connect wallet function using Wagmi
+  const connectWallet = async (): Promise<void> => {
     setIsConnecting(true);
     
-    try { 
-      if (!window.ethereum) { 
-        throw new Error('Please install MetaMask or another Web3 wallet'); 
-      } 
-
-      // Request account access with timeout
-      const accountsPromise = window.ethereum.request({ method: 'eth_requestAccounts' });
-      const timeoutPromise = createTimeoutPromise(30000, 'Connection request timed out');
-      
-      await Promise.race([accountsPromise, timeoutPromise]);
-
-      const web3Provider = new BrowserProvider(window.ethereum); 
-      const network = await web3Provider.getNetwork(); 
-
-      // Check if already on Lisk Sepolia 
-      if (network.chainId !== 4202n) { 
-        try { 
-          // Try to switch to Lisk Sepolia with timeout
-          const switchPromise = window.ethereum.request({ 
-            method: 'wallet_switchEthereumChain', 
-            params: [{ chainId: LISK_SEPOLIA_CONFIG.chainId }], 
-          });
-          const switchTimeoutPromise = createTimeoutPromise(15000, 'Network switch timed out');
-          
-          await Promise.race([switchPromise, switchTimeoutPromise]);
-        } catch (switchError: any) { 
-          // If the chain hasn't been added to MetaMask, add it 
-          if (switchError.code === 4902) { 
-            const addNetworkPromise = window.ethereum.request({ 
-              method: 'wallet_addEthereumChain', 
-              params: [LISK_SEPOLIA_CONFIG], 
-            });
-            const addTimeoutPromise = createTimeoutPromise(15000, 'Add network timed out');
-            
-            await Promise.race([addNetworkPromise, addTimeoutPromise]);
-          } else if (!switchError.message.includes('timed out')) {
-            throw switchError; 
+    try {
+      // Connect using Wagmi
+      await new Promise<void>((resolve, reject) => {
+        connect(
+          { connector: injected() },
+          {
+            onSuccess: () => resolve(),
+            onError: (error) => reject(error),
           }
-        } 
-      } 
+        );
+      });
 
-      // Get the signer after network is correct 
-      const web3Signer = await web3Provider.getSigner(); 
-      const userAddress = await web3Signer.getAddress(); 
-       
-      // Get native balance 
-      const balance = await web3Provider.getBalance(userAddress); 
-      const formattedBalance = ethers.formatEther(balance); 
+      // Check if we're on the correct network
+      if (chain?.id !== LISK_SEPOLIA_CHAIN_ID) {
+        try {
+          await switchChain({ chainId: LISK_SEPOLIA_CHAIN_ID });
+        } catch (switchError: any) {
+          console.error('Failed to switch to Lisk Sepolia:', switchError);
+          throw new Error('Please switch to Lisk Sepolia network');
+        }
+      }
 
-      // Update state 
-      setProvider(web3Provider); 
-      setSigner(web3Signer); 
-      setAddress(userAddress); 
-      setNativeBalance(formattedBalance); 
-      setIsConnected(true); 
-
-      console.log('Successfully connected to Lisk Sepolia:', userAddress); 
-    } catch (error: any) { 
-      console.error('Failed to connect wallet:', error); 
-      
-      // Reset all connection states on error
-      setIsConnected(false);
-      setProvider(null);
-      setSigner(null);
-      setAddress('');
-      setNativeBalance('0');
-      
-      throw error; 
+      console.log('Successfully connected to Lisk Sepolia:', address);
+    } catch (error: any) {
+      console.error('Failed to connect wallet:', error);
+      throw error;
     } finally {
       setIsConnecting(false);
     }
   };
 
-  // Manual reset function for stuck states
+  // Reset wallet connection
   const resetWalletConnection = () => {
     setIsConnecting(false);
-    setIsConnected(false);
-    setAddress('');
-    setProvider(null);
     setSigner(null);
-    setNativeBalance('0');
+    disconnect();
     console.log('Wallet connection state reset');
   };
 
-  // Add useEffect for cleanup and event listeners
+  // Effect to create signer when wallet is connected and on correct network
   useEffect(() => {
-    if (window.ethereum) {
-      const handleAccountsChanged = (accounts: string[]) => {
-        if (accounts.length === 0) {
-          // User disconnected wallet
-          resetWalletConnection();
-          console.log('Wallet disconnected');
-        } else if (accounts[0] !== address && address) {
-          // Account changed, reconnect
-          setIsConnecting(false);
-          connectWallet();
-        }
-      };
-
-      const handleChainChanged = (chainId: string) => {
-        // Reset connection state when chain changes
-        setIsConnecting(false);
-        console.log('Chain changed to:', chainId);
-        
-        // If not on Lisk Sepolia, reset connection
-        if (chainId !== LISK_SEPOLIA_CONFIG.chainId) {
-          setIsConnected(false);
-          setProvider(null);
-          setSigner(null);
-        }
-      };
-
-      const handleDisconnect = () => {
-        resetWalletConnection();
-      };
-
-      // Add event listeners
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      window.ethereum.on('chainChanged', handleChainChanged);
-      window.ethereum.on('disconnect', handleDisconnect);
-
-      // Cleanup on unmount
-      return () => {
-        if (window.ethereum.removeListener) {
-          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-          window.ethereum.removeListener('chainChanged', handleChainChanged);
-          window.ethereum.removeListener('disconnect', handleDisconnect);
-        }
-        
-        // Reset connecting state on component unmount
-        setIsConnecting(false);
-      };
-    }
-  }, [address, isConnected]);
-
-  // Check if wallet was previously connected on component mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      if (window.ethereum) {
+    const createSigner = async () => {
+      if (wagmiIsConnected && wagmiAddress && chain?.id === LISK_SEPOLIA_CHAIN_ID) {
         try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            // Wallet was previously connected, try to reconnect silently
-            const web3Provider = new BrowserProvider(window.ethereum);
-            const network = await web3Provider.getNetwork();
-            
-            if (network.chainId === 4202n) {
-              const web3Signer = await web3Provider.getSigner();
-              const userAddress = await web3Signer.getAddress();
-              const balance = await web3Provider.getBalance(userAddress);
-              const formattedBalance = ethers.formatEther(balance);
-
-              setProvider(web3Provider);
-              setSigner(web3Signer);
-              setAddress(userAddress);
-              setNativeBalance(formattedBalance);
-              setIsConnected(true);
-              
-              console.log('Auto-reconnected to wallet:', userAddress);
-            }
+          if (typeof window !== 'undefined' && window.ethereum) {
+            const provider = new BrowserProvider(window.ethereum);
+            const ethSigner = await provider.getSigner();
+            setSigner(ethSigner);
           }
         } catch (error) {
-          console.log('Auto-reconnection failed:', error);
+          console.error('Failed to create signer:', error);
+          setSigner(null);
         }
+      } else {
+        setSigner(null);
       }
     };
 
-    checkConnection();
-  }, []);
+    createSigner();
+  }, [wagmiIsConnected, wagmiAddress, chain?.id]);
 
+  // Update isConnecting state based on Wagmi's connection status
+  useEffect(() => {
+    if (connectStatus === 'pending') {
+      setIsConnecting(true);
+    } else if ((connectStatus === 'idle' || connectStatus === 'success' || connectStatus === 'error') && isConnecting) {
+      setIsConnecting(false);
+    }
+  }, [connectStatus, isConnecting]);
+
+  // Fetch balance function
   const fetchBalance = async (faucetAddress: string): Promise<string | undefined> => {
     try {
-      if (!provider || !address) {
-        throw new Error('Provider or address not available');
+      if (!address) {
+        throw new Error('Address not available');
       }
 
       // Check if it's the native token
@@ -280,6 +162,7 @@ export const ContractInstanceProvider: React.FC<{ children: ReactNode }> = ({ ch
     }
   };
 
+  // Contract instance functions - same as before
   const SWAP_CONTRACT_INSTANCE = async (): Promise<ethers.Contract | null> => {
     if (!signer) {
       console.warn('Signer not available. Please connect your wallet first.');
@@ -315,7 +198,7 @@ export const ContractInstanceProvider: React.FC<{ children: ReactNode }> = ({ ch
     nativeBalance,
     tokenList: tokens,
     isConnected,
-    isConnecting,
+    isConnecting: isConnecting || connectStatus === 'pending',
     resetWalletConnection,
   };
 

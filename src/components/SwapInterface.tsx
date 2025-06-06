@@ -49,6 +49,49 @@ const SwapInterface = () => {
   const[isEstimateAmount2,setEstimatedAmount2]=useState(false)
 
 
+const [poolPrices, setPoolPrices] = useState<{ [key: string]: string }>({});
+
+ useEffect(() => {
+  const fetchPrices = async () => {
+    const pools = getAllLiquidityPools(); // e.g., ["ETH/USDC", "ETH/AFRC"]
+
+    const prices: { [key: string]: string } = {};
+
+    for (const pool of pools) {
+      const [token1Symbol, token2Symbol] = pool.split("/");
+
+      const token1Address = tokens.find(t => t.symbol === token1Symbol)?.address;
+      const token2Address = tokens.find(t => t.symbol === token2Symbol)?.address;
+
+      const TokenAmountInWei = ethers.parseEther("1");
+
+      if (token1Address && token2Address) {
+        try {
+          const swapContract = await SWAP_CONTRACT_INSTANCE();
+          const rate = await swapContract.estimate(
+            token1Address,
+            token2Address,
+            TokenAmountInWei
+          );
+          const f_rate = ethers.formatEther(rate);
+          prices[pool] = parseFloat(f_rate).toFixed(2);
+        } catch (error) {
+          console.error(`Failed to fetch price for ${pool}:`, error);
+          prices[pool] = "Error";
+        }
+      } else {
+        prices[pool] = "Unknown Tokens";
+      }
+    }
+
+    setPoolPrices(prices);
+    console.log("Fetched pool prices:", prices);
+  };
+
+  fetchPrices();
+}, []);
+
+
   
 useEffect(()=>{
   const fetchData = async () => {
@@ -80,6 +123,24 @@ useEffect(()=>{
   fetchData();
 
 },[isConnected,fromToken,toToken,address,Bal1,Bal2,dollarRate,setDollarRate,PRICEAPI_CONTRACT_INSTANCE])
+
+
+ const getAllLiquidityPools = () => {
+    const pools: string[] = [];
+    tokens.forEach(token => {
+      if (Array.isArray(token.pool)) {
+        token.pool.forEach(poolToken => {
+          const pair = `${token.symbol}/${poolToken}`;
+          const reversePair = `${poolToken}/${token.symbol}`;
+          if (!pools.includes(pair) && !pools.includes(reversePair)) {
+            pools.push(pair);
+          }
+        });
+      }
+    });
+    return pools;
+  };
+
 
 
   const calculateAmount2 = async () => {
@@ -589,20 +650,16 @@ useEffect(()=>{
       {/* Exchange Rate Widget */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200">
         <h3 className="font-semibold text-stone-800 mb-3">Live Exchange Rates</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-stone-600">ETH/AFRC</span>
-            <span className="font-medium">2,150.00</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-stone-600">USDC/AFRC</span>
-            <span className="font-medium">1.00</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-stone-600">ETH/USDC</span>
-            <span className="font-medium">2,150.00</span>
-          </div>
+  {isConnected && (<div className="space-y-2">
+      {Object.entries(poolPrices).map(([pool, price]) => (
+        <div key={pool} className="flex justify-between items-center">
+          <span className="text-stone-600">{pool}</span>
+          <span className="font-medium">{price}</span>
         </div>
+      ))}
+    </div>
+  )}
+
       </div>
     </div>
   );

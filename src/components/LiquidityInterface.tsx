@@ -43,13 +43,13 @@ const LiquidityInterface = () => {
   const token1Address = tokens.find(t => t.symbol === token1)?.address;
   const token2Address = tokens.find(t => t.symbol === token2)?.address;
 
-  console.log(token1Address,token2Address)
+
   const [amount1, setAmount1] = useState('');
   const [amount2, setAmount2] = useState('');
   const [availablePools, setAvailablePools] = useState<string[]>([]);
   const [poolExists, setPoolExists] = useState(true);
   
-  const { isConnected, SWAP_CONTRACT_INSTANCE, TEST_TOKEN_CONTRACT_INSTANCE, fetchBalance, address } = useContractInstances()
+  const { isConnected, SWAP_CONTRACT_INSTANCE, TEST_TOKEN_CONTRACT_INSTANCE, PRICEAPI_CONTRACT_INSTANCE,fetchBalance, address } = useContractInstances()
 
   // States from old frontend
   const [isApprove1, setApprove1] = useState(false);
@@ -64,8 +64,390 @@ const LiquidityInterface = () => {
   const [amount1inWei, setToWei] = useState(null);
   const [poolBal1, setPoolBal1] = useState(null);
   const [poolBal2, setPoolBal2] = useState(null);
+  const [liquidID, setLiquidID] = useState('');
+  const[isRemoveLiquid,setIsRemoveLiquid]=useState(false)
+  const [loading, setLoading] = useState(false);
+  const [userLiquidityPools, setUserLiquidityPools] = useState([]);
+
+  // Helper function to get USD value for a token amount
+  const getTokenUSDValue = async (tokenAddress, amount, PRICE_FEED_CONTRACT) => {
+    try {
+      console.log(`     Getting price for token ${tokenAddress}, amount: ${amount}`);
+      const priceInWei = await PRICE_FEED_CONTRACT.getLatestPrice(tokenAddress);
+      const price = parseFloat(formatEther(priceInWei));
+      const usdValue = amount * price;
+      console.log(`     Token price: ${price}, USD value: ${usdValue.toFixed(2)}`);
+      return usdValue;
+    } catch (error) {
+      console.error(`     ❌ Error getting price for token ${tokenAddress}:`, error.message);
+      return 0;
+    }
+  };
+
+  // Helper function to get total pool liquidity in USD
+  const getTotalPoolLiquidity = async (tokenA, tokenB, PRICE_FEED_CONTRACT, SWAP_CONTRACT) => {
+    try {
+      console.log(`     Getting pool size for ${tokenA.symbol}/${tokenB.symbol}`);
+      // Get total pool balances using getPoolSize
+      const [poolBalance1, poolBalance2] = await SWAP_CONTRACT.getPoolSize(tokenA.address, tokenB.address);
+      
+      const totalAmount0Formatted = parseFloat(formatEther(poolBalance1));
+      const totalAmount1Formatted = parseFloat(formatEther(poolBalance2));
+      
+      console.log(`     Pool Balances: ${totalAmount0Formatted} ${tokenA.symbol}, ${totalAmount1Formatted} ${tokenB.symbol}`);
+      
+      const [usdValue0, usdValue1] = await Promise.all([
+        getTokenUSDValue(tokenA.address, totalAmount0Formatted, PRICE_FEED_CONTRACT),
+        getTokenUSDValue(tokenB.address, totalAmount1Formatted, PRICE_FEED_CONTRACT)
+      ]);
+      
+      const totalUsdValue = usdValue0 + usdValue1;
+      console.log(`     Total pool USD value: ${totalUsdValue.toFixed(2)}`);
+      return totalUsdValue;
+    } catch (error) {
+      console.error(`     ❌ Error getting total pool liquidity for tokens ${tokenA.symbol}/${tokenB.symbol}:`, error.message);
+      return 0;
+    }
+  };
+
+  const getAllLiquidityPoolsWithAddresses = () => {
+  const pools = [];
+  tokens.forEach(token => {
+    if (Array.isArray(token.pool)) {
+      token.pool.forEach(poolTokenSymbol => {
+        // Find the token object for the pool partner
+        const partnerToken = tokens.find(t => t.symbol === poolTokenSymbol);
+        if (partnerToken) {
+          const pair = `${token.symbol}/${poolTokenSymbol}`;
+          const reversePair = `${poolTokenSymbol}/${token.symbol}`;
+          
+          // Check if this pair already exists (avoid duplicates)
+          const existingPool = pools.find(p => p.pair === pair || p.pair === reversePair);
+          if (!existingPool) {
+            pools.push({
+              pair: pair,
+              tokenA: {
+                symbol: token.symbol,
+                address: token.address
+              },
+              tokenB: {
+                symbol: poolTokenSymbol,
+                address: partnerToken.address
+              }
+            });
+          }
+        }
+      });
+    }
+  });
+  return pools;
+};
+
+// Enhanced useEffect to fetch all pool data
+useEffect(() => {
+  let intervalId;
+  
+  const fetchAllPoolsData = async () => {
+    try {
+      console.log('🔄 Starting liquidity pools fetch...');
+      setLoading(true);
+      
+      if (!SWAP_CONTRACT_INSTANCE || !isConnected || !tokens?.length) {
+        console.log('❌ Missing dependencies:', {
+          SWAP_CONTRACT_INSTANCE: !!SWAP_CONTRACT_INSTANCE,
+          isConnected,
+          tokensLength: tokens?.length || 0
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ All dependencies available, initializing contracts...');
+      const SWAP_CONTRACT = await SWAP_CONTRACT_INSTANCE();
+      const PRICE_FEED_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
+      
+      // Get all available pools
+      const availablePools = getAllLiquidityPoolsWithAddresses();
+      console.log('📋 Available pools:', availablePools);
+      
+      const structuredPools = [];
+
+      for (const pool of availablePools) {
+        try {
+          console.log(`\n🔍 Processing pool: ${pool.pair}`);
+          
+          const { tokenA, tokenB } = pool;
+          
+          // Fetch pool balances
+          console.log('   🏊 Fetching pool balances...');
+          const [poolBalance1, poolBalance2] = await SWAP_CONTRACT.getPoolSize(
+            tokenA.address, 
+            tokenB.address
+          );
+          
+          const poolBal1 = parseFloat(formatEther(poolBalance1));
+          const poolBal2 = parseFloat(formatEther(poolBalance2));
+          
+          console.log(`   Pool Balances: ${poolBal1} ${tokenA.symbol}, ${poolBal2} ${tokenB.symbol}`);
+          
+          // Get USD values for pool balances
+          console.log('   💰 Getting USD values for pool balances...');
+          const [poolUsdValue1, poolUsdValue2] = await Promise.all([
+            getTokenUSDValue(tokenA.address, poolBal1, PRICE_FEED_CONTRACT),
+            getTokenUSDValue(tokenB.address, poolBal2, PRICE_FEED_CONTRACT)
+          ]);
+          
+          const totalPoolLiquidity = poolUsdValue1 + poolUsdValue2;
+          console.log(`   Total pool liquidity: $${totalPoolLiquidity.toFixed(2)}`);
+          
+          // Get user's liquidity in this pool (if address is available)
+          let userLiquidity = 0;
+          let userShare = '0.0000';
+          let userTokenA = { amount: 0, usdValue: 0 };
+          let userTokenB = { amount: 0, usdValue: 0 };
+          let fees24h = '0.00';
+          
+          if (address) {
+            try {
+              console.log('   👤 Fetching user liquidity...');
+              // This would need to be implemented based on your contract's user liquidity method
+              // const [userAmountA, userAmountB] = await SWAP_CONTRACT.getUserLiquidity(address, tokenA.address, tokenB.address);
+              
+              // For now, we'll set to 0 - you'll need to implement this based on your contract
+              const userAmountA = 0;
+              const userAmountB = 0;
+              
+              if (userAmountA > 0 || userAmountB > 0) {
+                const [userUsdValueA, userUsdValueB] = await Promise.all([
+                  getTokenUSDValue(tokenA.address, userAmountA, PRICE_FEED_CONTRACT),
+                  getTokenUSDValue(tokenB.address, userAmountB, PRICE_FEED_CONTRACT)
+                ]);
+                
+                userLiquidity = userUsdValueA + userUsdValueB;
+                userShare = totalPoolLiquidity > 0 
+                  ? ((userLiquidity / totalPoolLiquidity) * 100).toFixed(4)
+                  : '0.0000';
+                
+                userTokenA = { amount: userAmountA, usdValue: userUsdValueA };
+                userTokenB = { amount: userAmountB, usdValue: userUsdValueB };
+                
+                // Calculate fees (implement based on your contract)
+                fees24h = '0.00'; // Placeholder
+              }
+            } catch (error) {
+              console.warn(`   ⚠️ Could not fetch user liquidity:`, error.message);
+            }
+          }
+          
+          const poolData = {
+            pair: pool.pair,
+            userLiquidity: userLiquidity,
+            userShare: userShare,
+            fees24h: fees24h,
+            totalLiquidity: totalPoolLiquidity,
+            tokenA: {
+              symbol: tokenA.symbol,
+              amount: userTokenA.amount,
+              usdValue: userTokenA.usdValue,
+              address: tokenA.address,
+              poolBalance: poolBal1,
+              poolUsdValue: poolUsdValue1
+            },
+            tokenB: {
+              symbol: tokenB.symbol,
+              amount: userTokenB.amount,
+              usdValue: userTokenB.usdValue,
+              address: tokenB.address,
+              poolBalance: poolBal2,
+              poolUsdValue: poolUsdValue2
+            }
+          };
+
+          structuredPools.push(poolData);
+          console.log(`   ✅ Pool ${pool.pair} processed successfully`);
+          
+        } catch (error) {
+          console.error(`   ❌ Error processing pool ${pool.pair}:`, error);
+        }
+      }
+
+      console.log(`\n🎯 Final structured pools (${structuredPools.length}):`, structuredPools);
+      setUserLiquidityPools(structuredPools);
+      console.log('✅ Liquidity pools fetch completed successfully');
+      
+    } catch (error) {
+      console.error('❌ Error fetching liquidity pools data:', error);
+      console.error('Error stack:', error.stack);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  fetchAllPoolsData();
+
+  // Set up interval - 15 seconds to be reasonable
+  intervalId = setInterval(fetchAllPoolsData, 60000);
+
+  // Cleanup interval on unmount or dependency change
+  return () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+    }
+  };
+}, [SWAP_CONTRACT_INSTANCE, isConnected, address, tokens]);
+useEffect(() => {
+  let intervalId;
+  
+  const fetchData = async () => {
+    try {
+      console.log('🔄 Starting liquidity fetch...');
+      setLoading(true);
+      
+      // Early return if dependencies are missing
+      if (!SWAP_CONTRACT_INSTANCE || !isConnected || !address || !tokens?.length) {
+        console.log('❌ Missing dependencies:', {
+          SWAP_CONTRACT_INSTANCE: !!SWAP_CONTRACT_INSTANCE,
+          isConnected,
+          address,
+          tokensLength: tokens?.length || 0
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ All dependencies available, initializing contracts for...');
+      const SWAP_CONTRACT = await SWAP_CONTRACT_INSTANCE();
+      const PRICE_FEED_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
+      
+      console.log('📋 Fetching user liquidities for address:', address);
+      const [pools, amounts0, amounts1, providerLiquids] = await SWAP_CONTRACT.myLiquidities(address);
+
+      console.log('📊 Raw liquidity data:', {
+        poolsCount: pools.length,
+        pools: pools.map(p => p.toString()),
+        amounts0: amounts0.map(a => formatEther(a)),
+        amounts1: amounts1.map(a => formatEther(a))
+      });
+
+      const structuredPools = [];
+
+      for (let i = 0; i < pools.length; i++) {
+        console.log(`\n🔍 Processing pool ${i + 1}/${pools.length}`);
+        
+        const poolId = pools[i].toString();
+        const amount0 = parseFloat(formatEther(amounts0[i]));
+        const amount1 = parseFloat(formatEther(amounts1[i]));
+
+        console.log(`   Pool ID: ${poolId}`);
+        console.log(`   User amounts: ${amount0} / ${amount1}`);
+
+        // Find token pair by poolId reference - improved logic
+        const poolTokens = tokens.filter(token => {
+          // Handle both array and single value cases
+          const tokenPoolIds = Array.isArray(token.poolId) ? token.poolId : [token.poolId];
+          return tokenPoolIds.includes(Number(poolId));
+        });
+        
+        console.log(`   Found ${poolTokens.length} matching tokens:`, poolTokens.map(t => t.symbol));
+        
+        if (poolTokens.length === 2) {
+          const [tokenA, tokenB] = poolTokens;
+          
+          // Ensure we have different tokens
+          if (tokenA.address === tokenB.address) {
+            console.warn(`   ❌ Found duplicate token addresses for pool ${poolId}`);
+            continue;
+          }
+          
+          console.log(`   Token pair: ${tokenA.symbol}/${tokenB.symbol}`);
+          console.log(`   Token addresses: ${tokenA.address} / ${tokenB.address}`);
+          
+          // Get USD values for user's liquidity
+          console.log('   💰 Getting USD values for user liquidity...');
+          const [userUsdValue0, userUsdValue1] = await Promise.all([
+            getTokenUSDValue(tokenA.address, amount0, PRICE_FEED_CONTRACT),
+            getTokenUSDValue(tokenB.address, amount1, PRICE_FEED_CONTRACT)
+          ]);
+          
+          const userTotalUsdValue = userUsdValue0 + userUsdValue1;
+          console.log(`   User USD values: ${userUsdValue0.toFixed(2)} + ${userUsdValue1.toFixed(2)} = ${userTotalUsdValue.toFixed(2)}`);
+          
+          // Get total pool liquidity in USD
+          console.log('   🏊 Getting total pool liquidity...');
+          const totalPoolLiquidity = await getTotalPoolLiquidity(tokenA, tokenB, PRICE_FEED_CONTRACT, SWAP_CONTRACT);
+          console.log(`   Total pool liquidity: ${totalPoolLiquidity.toFixed(2)}`);
+          
+          // Calculate user's share percentage
+          const userSharePercentage = totalPoolLiquidity > 0 
+            ? ((userTotalUsdValue / totalPoolLiquidity) * 100).toFixed(4)
+            : '0.0000';
+          console.log(`   User share: ${userSharePercentage}%`);
+
+          // Calculate 24h fees (you might need to implement this in your contract)
+          let fees24h = '0.00';
+          try {
+            console.log('   💸 Fetching user fees...');
+            const feesEarned = 24;
+            const feesUsd = await getTokenUSDValue(tokenA.address, parseFloat(formatEther(feesEarned)), PRICE_FEED_CONTRACT);
+            fees24h = feesUsd.toFixed(2);
+            console.log(`   24h fees: ${fees24h}`);
+          } catch (error) {
+            console.warn(`   ⚠️ Could not fetch fees for pool ${poolId}:`, error.message);
+          }
+
+          const poolData = {
+            pair: `${tokenA.symbol}/${tokenB.symbol}`,
+            userLiquidity: userTotalUsdValue,
+            userShare: userSharePercentage,
+            fees24h: fees24h,
+            totalLiquidity: totalPoolLiquidity,
+            poolId,
+            tokenA: {
+              symbol: tokenA.symbol,
+              amount: amount0,
+              usdValue: userUsdValue0,
+              address: tokenA.address
+            },
+            tokenB: {
+              symbol: tokenB.symbol,
+              amount: amount1,
+              usdValue: userUsdValue1,
+              address: tokenB.address
+            }
+          };
+
+          structuredPools.push(poolData);
+          console.log(`   ✅ Pool ${poolId} processed successfully`);
+        } else {
+          console.warn(`   ❌ Could not resolve full token pair for poolId ${poolId} - found ${poolTokens.length} tokens`);
+          if (poolTokens.length > 2) {
+            console.warn(`   Token details:`, poolTokens.map(t => ({ symbol: t.symbol, address: t.address, poolId: t.poolId })));
+          }
+        }
+      }
+
+      console.log(`\n🎯 Final structured pools (${structuredPools.length}):`, structuredPools);
+      setUserLiquidityPools(structuredPools);
+      console.log('✅ Liquidity fetch completed successfully');
+      
+    } catch (error) {
+      console.error('❌ Error fetching liquidity data:', error);
+      console.error('Error stack:', error.stack);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  fetchData();
 
   
+}, [SWAP_CONTRACT_INSTANCE, isConnected, address, tokens]);
+ 
+
+
+
 
 useEffect(() => {
   const fetchData = async () => {
@@ -84,6 +466,9 @@ useEffect(() => {
         console.warn('Unable to get swap contract instance. Please connect your wallet.');
         return;
       }
+
+
+
 
       // Fetch pool balances
       const [poolBalance1, poolBalance2] = await SWAP_CONTRACT.getPoolSize(token1Address, token2Address);
@@ -497,7 +882,11 @@ const ADD_LIQUID=await SWAP_CONTRACT.provideLiquidity(POOL_ID, amount1inWei, {
                       await ADD_LIQUID.wait();
                       console.log(`Success - ${ADD_LIQUID.hash}`);
                       setIsAddLiquid(false);
-                     
+                      
+               setHasApprovedOne(false);
+               setHasApprovedTwo(false);
+               setApprove1(false);
+               setApprove2(false);
                      getLiquidID(POOL_ID, token1 , token2);
                       
              }catch(error){
@@ -511,6 +900,24 @@ const ADD_LIQUID=await SWAP_CONTRACT.provideLiquidity(POOL_ID, amount1inWei, {
   
   };
 
+
+
+    const REMOVE_LIQUID=async()=>{
+      try{
+        const SWAP_CONTRACT= await SWAP_CONTRACT_INSTANCE();  
+       const REMOVE_LIQUID =await SWAP_CONTRACT.removeLiquidity(liquidID); 
+       console.log(`Loading - ${REMOVE_LIQUID.hash}`);
+       setIsRemoveLiquid(true)
+        await REMOVE_LIQUID.wait();
+      console.log(`Success - ${REMOVE_LIQUID.hash}`);
+      setIsRemoveLiquid(false)
+      }catch(error){
+       setIsRemoveLiquid(false)
+       console.log(error)
+      }
+
+      
+    }
 
   return (
     <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8 space-y-8">
@@ -789,57 +1196,155 @@ const ADD_LIQUID=await SWAP_CONTRACT.provideLiquidity(POOL_ID, amount1inWei, {
       )}
     </div>
 
-      {activeTab === 'pools' && (
-        <div className="space-y-4">
-          {liquidityPools.map((pool, index) => (
-            <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-terracotta to-sage rounded-full flex items-center justify-center">
-                    <Droplets className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-stone-800">{pool.pair}</h3>
-                    <p className="text-stone-600 text-sm">{pool.userShare}% pool share</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-stone-800">${pool.userLiquidity.toLocaleString()}</p>
-                  <p className="text-stone-600 text-sm">Your liquidity</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-stone-600">24h Fees Earned</p>
-                  <p className="font-semibold text-green-600">${pool.fees24h}</p>
-                </div>
-                <div>
-                  <p className="text-stone-600">Total Pool Liquidity</p>
-                  <p className="font-semibold text-stone-800">${pool.totalLiquidity.toLocaleString()}</p>
-                </div>
-              </div>
-              
-              <div className="flex space-x-3 mt-4">
-                <button className="flex-1 bg-terracotta text-white py-2 rounded-lg hover:bg-terracotta/90 transition-colors">
-                  Add More
-                </button>
-                <button className="flex-1 bg-stone-100 text-stone-700 py-2 rounded-lg hover:bg-stone-200 transition-colors">
-                  Remove
-                </button>
-              </div>
+    {activeTab === 'pools' && (
+       <div className="space-y-4">
+  {loading ? (
+    <div className="text-center py-8 text-stone-600">
+      <p>Loading liquidity pools...</p>
+    </div>
+  ) : userLiquidityPools.length === 0 ? (
+    <div className="text-center py-8 text-stone-600">
+      <p>No liquidity pools available</p>
+    </div>
+  ) : (
+    userLiquidityPools.map((pool, index) => (
+      <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-terracotta to-sage rounded-full flex items-center justify-center">
+              <Droplets className="w-5 h-5 text-white" />
             </div>
-          ))}
+            <div>
+              <h3 className="font-semibold text-stone-800">{pool.pair}</h3>
+              <p className="text-stone-600 text-sm">
+                {parseFloat(pool.userShare) > 0 
+                  ? `${pool.userShare}% pool share` 
+                  : 'Available for liquidity'
+                }
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+          
+           
+          </div>
         </div>
+        
+{/* Token breakdown */}
+<div className="grid grid-cols-2 gap-4 mb-4 text-sm bg-stone-50 rounded-lg p-3">
+  <div>
+    <p className="text-stone-600">{pool.tokenA.symbol}</p>
+    <p className="font-medium">
+      {parseFloat(pool.tokenA.amount) > 0 
+        ? `${pool.tokenA.amount.toFixed(6)} (Your position)`
+        : `${pool.tokenA.poolBalance.toFixed(2)} (Pool balance)`
+      }
+    </p>
+    <p className="text-xs text-stone-500">
+      ${parseFloat(pool.tokenA.amount) > 0 
+        ? pool.tokenA.usdValue.toFixed(2)
+        : pool.tokenA.poolUsdValue.toFixed(2)
+      }
+    </p>
+  </div>
+  <div>
+    <p className="text-stone-600">{pool.tokenB.symbol}</p>
+    <p className="font-medium">
+      {parseFloat(pool.tokenB.amount) > 0 
+        ? `${pool.tokenB.amount.toFixed(6)} (Your position)`
+        : `${pool.tokenB.poolBalance.toFixed(2)} (Pool balance)`
+      }
+    </p>
+    <p className="text-xs text-stone-500">
+      ${parseFloat(pool.tokenB.amount) > 0 
+        ? pool.tokenB.usdValue.toFixed(2)
+        : pool.tokenB.poolUsdValue.toFixed(2)
+      }
+    </p>
+  </div>
+</div>
+
+<div className="text-sm">
+  <div className="text-center py-2">
+    <p className="text-stone-600 mb-1">Total Pool Liquidity</p>
+    <p className="font-semibold text-stone-800 text-base">
+      ${pool.totalLiquidity.toLocaleString(undefined, {
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2
+      })}
+    </p>
+  </div>
+</div> 
+        
+      </div>
+    ))
+  )}
+</div>
       )}
 
       {activeTab === 'remove' && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200">
-          <h3 className="text-lg font-semibold text-stone-800 mb-4">Remove Liquidity</h3>
-          <p className="text-stone-600 text-center py-8">
-            Select a pool from "Your Pools" tab to remove liquidity
-          </p>
-        </div>
+         <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 mx-4">
+          <h3 className="text-lg font-semibold text-stone-800 mb-4">Add Liquidity</h3>
+          
+          <div className="space-y-4">
+            {/* Token 1 */}
+            <div className="bg-stone-50 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-stone-600 text-sm">Liquidity ID</span>
+             
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <input
+                  type="number"
+                  value={liquidID}
+                  onChange={(e) => setLiquidID(e.target.value)}
+                  disabled={!isConnected}
+                  className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder={isConnected ? "0" : "Connect wallet to enter amount"}
+                />
+                
+               
+              </div>
+            </div>
+
+        
+
+          
+          </div>
+
+      
+
+         
+
+          {/* Available Pools Info */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-center space-x-2 mb-2">
+              <Info className="w-4 h-4 text-blue-600" />
+              <span className="text-blue-800 font-medium text-sm">Available Pools</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {getAllLiquidityPools().map(pool => (
+                <span key={pool} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                  {pool}
+                </span>
+              ))}
+            </div>
+          </div>
+
+         
+      
+      {/* Main Action Button */}
+  <button 
+  disabled={isRemoveLiquid || !isConnected || !liquidID}
+  onClick={REMOVE_LIQUID}
+  className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+
+>
+  {isRemoveLiquid ? 'Removing Liquidity...': 'Remove Liquidity'}
+</button>
+
+    </div>
       )}
 
 

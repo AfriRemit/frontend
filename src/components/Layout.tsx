@@ -47,7 +47,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { name: 'Save & Earn', key: 'savings', icon: PiggyBank },
     { name: 'Family Pay', key: 'family', icon: Users },
     { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
-    { name: 'Faucet', key: 'faucet', icon: Droplets },
+    { name: 'Token Suite', key: 'faucet', icon: Droplets },
   ];
 
   const notifications = [
