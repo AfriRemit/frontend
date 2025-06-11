@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
+import { createThirdwebClient } from 'thirdweb';
+import { ConnectButton } from 'thirdweb/react';
+// Update the import to match the correct export name from thirdweb/chains
+
 import {
+  Shield,
   LayoutDashboard,
   Send,
   ArrowLeftRight,
@@ -13,7 +18,10 @@ import {
   Bell,
   Gift,
   ArrowDownLeft,
-  Home
+  DollarSignIcon,
+  Home,
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
@@ -27,17 +35,19 @@ interface LayoutProps {
 const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  
   const { 
-    connectWallet, 
     isConnected, 
     address, 
-    resetWalletConnection,
-    isConnecting: providerConnecting 
+    isCorrectNetwork,
+    networkError,
+    connectionError,
   } = useContractInstances();
 
-  // Use provider's connecting state if available, otherwise use local state
-  const actuallyConnecting = providerConnecting !== undefined ? providerConnecting : isConnecting;
+  // Create Thirdweb client
+  const client = createThirdwebClient({ 
+    clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID
+  });
 
   // Complete navigation list with all pages
   const navigation = [
@@ -45,9 +55,12 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { name: 'Send Money', key: 'send', icon: Send },
     { name: 'Swap', key: 'swap', icon: ArrowLeftRight },
     { name: 'Save & Earn', key: 'savings', icon: PiggyBank },
-    { name: 'Family Pay', key: 'family', icon: Users },
-    { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
+    //{ name: 'Family Pay', key: 'family', icon: Users },
+   // { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
     { name: 'Token Suite', key: 'faucet', icon: Droplets },
+     { name: 'Buy/Sell', key: 'Buy/Sell', icon: DollarSignIcon  },
+      { name: 'Admin', key: 'admin', icon: Shield },
+
   ];
 
   const notifications = [
@@ -56,60 +69,11 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { id: 3, title: 'Family Transfer', message: 'Scheduled transfer to Mama Adunni processed.', time: '2 days ago', unread: false }
   ];
 
-  // Handle wallet connection with improved error handling
-  const handleConnectWallet = async () => {
-    // Prevent multiple simultaneous connection attempts
-    if (isConnected || actuallyConnecting) return;
-    
-    setIsConnecting(true);
-    try {
-      await connectWallet();
-      console.log('Wallet connected successfully!');
-      // Close mobile sidebar if it was open
-      setSidebarOpen(false);
-    } catch (error: any) {
-      console.error('Connection failed:', error);
-      
-      // Provide user-friendly error messages
-      let errorMessage = 'Failed to connect wallet';
-      
-      if (error.code === 4001 || error.message.includes('User rejected')) {
-        errorMessage = 'Connection cancelled by user';
-      } else if (error.message.includes('timed out') || error.message.includes('timeout')) {
-        errorMessage = 'Connection timed out. Please try again.';
-      } else if (error.message.includes('install MetaMask')) {
-        errorMessage = 'Please install MetaMask or another Web3 wallet';
-      } else if (error.message.includes('network')) {
-        errorMessage = 'Network switching failed. Please try again.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      alert(errorMessage);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  // Handle manual reset for stuck connections
-  const handleResetConnection = () => {
-    if (resetWalletConnection) {
-      resetWalletConnection();
-    }
-    setIsConnecting(false);
-  };
-
   // Format address for display
   const formatAddress = (addr: string) => {
     if (!addr) return '';
+    if (addr.length < 10) return addr;
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
-  // Get wallet button text
-  const getWalletButtonText = () => {
-    if (actuallyConnecting) return 'Connecting...';
-    if (isConnected && address) return formatAddress(address);
-    return 'Connect Wallet';
   };
 
   const handleNotificationClick = () => {
@@ -165,7 +129,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
           </div>
 
           {/* Right side icons */}
-          <div className="hidden lg:flex items-center space-x-2">
+          <div className="hidden lg:flex items-center space-x-4">
             {/* Notifications */}
             <div className="relative">
               <button 
@@ -215,46 +179,51 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
               <Settings className="w-5 h-5 text-stone-700" />
             </button>
 
-            {/* Wallet Connection with full functionality */}
-            <div className="relative">
-              <div className="flex items-center space-x-2">
-                <button 
-                  onClick={handleConnectWallet}
-                  disabled={actuallyConnecting || isConnected}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                    isConnected 
-                      ? 'bg-green-600 text-white cursor-default'
-                      : actuallyConnecting
-                        ? 'bg-gray-400 text-white cursor-not-allowed'
-                        : 'bg-gradient-to-r from-terracotta to-sage text-white hover:shadow-lg cursor-pointer'
-                  }`}
-                >
-                  <Wallet className="w-4 h-4" />
-                  <span>{getWalletButtonText()}</span>
-                </button>
-                
-                {/* Reset button for stuck connections */}
-                {actuallyConnecting && (
-                  <button
-                    onClick={handleResetConnection}
-                    className="text-xs text-gray-500 hover:text-gray-700 underline px-2 py-1 rounded"
-                    title="Cancel connection"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-              
-              {/* Connection Status Indicator */}
-              {isConnected && (
-                <div className="absolute -top-1 -right-1">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-              )}
-            </div>
+            {/* Thirdweb Connect Button */}
+            <ConnectButton 
+            client={client}
+            
+              connectButton={{
+                label: "Connect Wallet",
+                className: "!bg-gradient-to-r !from-terracotta !to-sage !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 hover:!shadow-lg"
+              }}
+              detailsButton={{
+                className: "!bg-green-600 !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200",
+                displayBalanceToken: {
+                  4202: "0x0000000000000000000000000000000000000000" // ETH on Lisk Sepolia
+                }
+              }}
+              connectModal={{
+                title: "Connect to AfriRemit",
+                titleIcon: "https://your-logo-url.com/logo.png", // Optional: Add your logo
+                showThirdwebBranding: false,
+              }}
+              switchButton={{
+                label: "Switch to Lisk Sepolia"
+              }}
+            />
           </div>
         </div>
       </div>
+
+      {/* Network Error Banner */}
+      {(networkError || connectionError) && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-3 fixed top-16 left-0 right-0 z-20">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              <span className="text-sm text-red-800">
+                {networkError || connectionError}
+              </span>
+            </div>
+            {networkError && (
+              <span className="text-sm text-red-600 font-medium">
+                Use the wallet button to switch networks
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Mobile Sidebar Overlay */}
       <div className="lg:hidden">
@@ -317,40 +286,58 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                   <span>Settings</span>
                 </button>
                 
-                {/* Mobile Wallet Connection */}
-                <div className="space-y-2">
-                  <button 
-                    onClick={handleConnectWallet}
-                    disabled={actuallyConnecting || isConnected}
-                    className={`flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                      isConnected 
-                        ? 'bg-green-600 text-white cursor-default'
-                        : actuallyConnecting
-                          ? 'bg-gray-400 text-white cursor-not-allowed'
-                          : 'bg-gradient-to-r from-terracotta to-sage text-white hover:shadow-lg cursor-pointer'
-                    }`}
-                  >
-                    <Wallet className="w-5 h-5" />
-                    <span>{getWalletButtonText()}</span>
-                  </button>
+                {/* Mobile Thirdweb Connect Button */}
+                <div className="pt-4 border-t border-stone-200">
+                  <ConnectButton 
+                    client={client}
                   
-                  {/* Mobile reset button for stuck connections */}
-                  {actuallyConnecting && (
-                    <button
-                      onClick={handleResetConnection}
-                      className="flex items-center justify-center w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 underline rounded"
-                    >
-                      Cancel Connection
-                    </button>
-                  )}
+                    connectButton={{
+                      label: "Connect Wallet",
+                      className: "!w-full !bg-gradient-to-r !from-terracotta !to-sage !text-white !font-medium !px-4 !py-3 !rounded-lg"
+                    }}
+                    detailsButton={{
+                      className: "!w-full !bg-green-600 !text-white !font-medium !px-4 !py-3 !rounded-lg",
+                      displayBalanceToken: {
+                        4202: "0x0000000000000000000000000000000000000000"
+                      }
+                    }}
+                    connectModal={{
+                      title: "Connect to AfriRemit",
+                      showThirdwebBranding: false,
+                    }}
+                    switchButton={{
+                      label: "Switch to Lisk Sepolia"
+                    }}
+                  />
                 </div>
+                
+                {/* Connection Status Indicator */}
+                {isConnected && (
+                  <div className="px-4 py-2 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm font-medium text-green-800">Wallet Connected</span>
+                    </div>
+                    {address && (
+                      <p className="text-xs text-green-600 mt-1 font-mono">
+                        {formatAddress(address)}
+                      </p>
+                    )}
+                    {!isCorrectNetwork && (
+                      <div className="flex items-center space-x-2 mt-2">
+                        <AlertTriangle className="w-4 h-4 text-orange-500" />
+                        <span className="text-xs text-orange-600">Wrong Network</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Overlay to close notifications */}
+      {/* Overlay to close dropdowns */}
       {showNotifications && (
         <div 
           className="fixed inset-0 z-40" 
@@ -359,7 +346,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
       )}
 
       {/* Main Content */}
-      <div className="pt-16">
+      <div className={`pt-16 ${(networkError || connectionError) ? 'pt-28' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {children}
         </div>

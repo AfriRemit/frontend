@@ -1,4 +1,4 @@
-export const Token_ABI= [
+export const Token_ABI=[
 	{
 		"inputs": [
 			{
@@ -264,6 +264,19 @@ export const Token_ABI= [
 			}
 		],
 		"name": "burnFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_amount",
+				"type": "uint256"
+			}
+		],
+		"name": "buyToken",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"

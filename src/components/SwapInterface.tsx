@@ -91,6 +91,27 @@ const [poolPrices, setPoolPrices] = useState<{ [key: string]: string }>({});
   fetchPrices();
 }, []);
 
+// Filter tokens to exclude selected token from opposite dropdown
+const getAvailableTokens = (excludeToken) => {
+  return tokens.filter(token => token.symbol !== excludeToken);
+};
+
+// Handle token selection with automatic switching
+const handleFromTokenChange = (newFromToken) => {
+  setFromToken(newFromToken);
+  // If the new from token is the same as to token, swap them
+  if (newFromToken === toToken) {
+    setToToken(fromToken);
+  }
+};
+
+const handleToTokenChange = (newToToken) => {
+  setToToken(newToToken);
+  // If the new to token is the same as from token, swap them
+  if (newToToken === fromToken) {
+    setFromToken(toToken);
+  }
+};
 
   
 useEffect(()=>{
@@ -122,7 +143,7 @@ useEffect(()=>{
 
   fetchData();
 
-},[isConnected,fromToken,toToken,address,Bal1,Bal2,dollarRate,setDollarRate,PRICEAPI_CONTRACT_INSTANCE])
+},[isConnected,isSwapping,fromToken,toToken,token1Amount, token2Amount,address,Bal1,Bal2,dollarRate,setDollarRate,PRICEAPI_CONTRACT_INSTANCE])
 
 
  const getAllLiquidityPools = () => {
@@ -359,7 +380,7 @@ useEffect(()=>{
   };
 
   if (activeTab === 'liquidity') {
-    return <LiquidityInterface />;
+    return <LiquidityInterface onBackToSwap={() => setActiveTab('swap')} />;
   }
 
   return (
@@ -486,92 +507,125 @@ useEffect(()=>{
         )}
 
         {/* From Token */}
-        <div className="space-y-4">
-          <div className="bg-stone-50 rounded-xl p-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-stone-600 text-sm">From</span>
-                    {address && !isNaN(Bal1) && (
-              <span className="text-stone-500 text-sm">
-                Balance: {Bal1} {fromToken}
-              </span>
-                    )}
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <input
-                type="number"
-                disabled={!isConnected}
-                 value={token1Amount}
-            onChange={estimate}
-                className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none"
-                placeholder="0.0"
-              />
-              
-              <select
-                value={fromToken}
-                onChange={(e) => setFromToken(e.target.value)}
-                className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium"
-              >
-                {tokens.map(token => (
-                  <option key={token.symbol} value={token.symbol}>
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <button 
-              onClick={() => handleFromAmountChange()}
-              className="text-terracotta text-sm mt-2 hover:underline"
-            >
-              Max
-            </button>
-          </div>
+ <div className="space-y-4">
+  {/* From Token Block */}
+  <div className="bg-stone-50 rounded-xl p-4">
+    <div className="flex justify-between items-center mb-2">
+      <span className="text-stone-600 text-sm">From</span>
+      {address && !isNaN(Bal1) && (
+        <span className="text-stone-500 text-sm">
+          Balance: {Bal1} {fromToken}
+        </span>
+      )}
+    </div>
 
-          {/* Swap Arrow */}
-          <div className="flex justify-center">
-            <button
-              onClick={swapTokens}
-              className="p-2 bg-white border-2 border-stone-200 rounded-xl hover:border-terracotta transition-colors"
-            >
-              <ArrowUpDown className="w-5 h-5 text-stone-600" />
-            </button>
-          </div>
+    <div className="flex items-center justify-between">
+      <input
+        type="text"
+        inputMode="decimal"
+        pattern="[0-9]*[.,]?[0-9]*"
+        disabled={!isConnected}
+        value={token1Amount}
+        onChange={estimate}
+        className="w-24 text-2xl font-semibold bg-transparent border-none outline-none"
+        placeholder="0.0"
+      />
 
-          {/* To Token */}
-          <div className="bg-stone-50 rounded-xl p-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-stone-600 text-sm">To</span>
-               {address && !isNaN(Bal2) && (
-              <span className="text-stone-500 text-sm">
-                Balance: {Bal2} {toToken}
-              </span>
-               )}
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <input
-                type="number"
-                   value={token2Amount !== null ? token2Amount : ''}
-                readOnly
-                className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none text-stone-800"
-                placeholder="0.0"
-              />
-              
-              <select
-                value={toToken}
-                onChange={(e) => setToToken(e.target.value)}
-                className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium"
-              >
-                {tokens.map(token => (
-                  <option key={token.symbol} value={token.symbol}>
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+      <div className="flex items-center space-x-2 ml-6">
+        {tokens.find(t => t.symbol === fromToken)?.img && (
+          <img
+            src={tokens.find(t => t.symbol === fromToken)?.img}
+            alt={fromToken}
+            className="w-8 h-8 rounded-full"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        )}
+
+        <select
+          value={fromToken}
+          onChange={(e) => handleFromTokenChange(e.target.value)}
+          className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
+        >
+          {getAvailableTokens(toToken).map(token => (
+            <option key={token.symbol} value={token.symbol}>
+              {token.symbol}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+
+    <button 
+      onClick={() => handleFromAmountChange()}
+      className="text-terracotta text-sm mt-2 hover:underline"
+    >
+      Max
+    </button>
+  </div>
+
+  {/* Swap Arrow */}
+  <div className="flex justify-center">
+    <button
+      onClick={swapTokens}
+      className="p-2 bg-white border-2 border-stone-200 rounded-xl hover:border-terracotta transition-colors"
+    >
+      <ArrowUpDown className="w-5 h-5 text-stone-600" />
+    </button>
+  </div>
+
+  {/* To Token Block */}
+  <div className="bg-stone-50 rounded-xl p-4">
+    <div className="flex justify-between items-center mb-2">
+      <span className="text-stone-600 text-sm">To</span>
+      {address && !isNaN(Bal2) && (
+        <span className="text-stone-500 text-sm">
+          Balance: {Bal2} {toToken}
+        </span>
+      )}
+    </div>
+
+    <div className="flex items-center justify-between">
+      <input
+        type="text"
+        inputMode="decimal"
+        pattern="[0-9]*[.,]?[0-9]*"
+        readOnly
+        value={token2Amount !== null ? token2Amount : ''}
+        className="w-40 text-2xl font-semibold bg-transparent border-none outline-none text-stone-800"
+        placeholder="0.0"
+      />
+
+      <div className="flex items-center space-x-2 ml-6">
+        {tokens.find(t => t.symbol === toToken)?.img && (
+          <img
+            src={tokens.find(t => t.symbol === toToken)?.img}
+            alt={toToken}
+            className="w-8 h-8 rounded-full"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        )}
+
+        <select
+          value={toToken}
+          onChange={(e) => handleToTokenChange(e.target.value)}
+          className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
+        >
+          {getAvailableTokens(fromToken).map(token => (
+            <option key={token.symbol} value={token.symbol}>
+              {token.symbol}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
         {/* Swap Details */}
         {token1Amount && (

@@ -8,11 +8,16 @@ import NotFound from "./pages/NotFound";
 import ContractInstanceProvider from "./provider/ContractInstanceProvider";
 import { wagmiConfig } from "./hooks/wagmi-config"; 
 import { WagmiProvider } from "wagmi";
+import { createThirdwebClient } from "thirdweb";
+import { ThirdwebProvider } from "thirdweb/react";
+ 
+
 const queryClient = new QueryClient();
 
 const App = () => (
 
 <WagmiProvider config={wagmiConfig}>
+  <ThirdwebProvider>
     <QueryClientProvider client={queryClient}>
   <ContractInstanceProvider>
 
@@ -31,6 +36,7 @@ const App = () => (
  
     </ContractInstanceProvider>
      </QueryClientProvider>
+     </ThirdwebProvider>
      </WagmiProvider>
     
 );

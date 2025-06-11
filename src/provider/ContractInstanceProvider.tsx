@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { ethers, BrowserProvider } from 'ethers';
-import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from 'wagmi';
-import { injected } from 'wagmi/connectors';
+import { ethers } from 'ethers';
+import { useActiveAccount, useActiveWallet, useActiveWalletChain} from 'thirdweb/react';
 import { PRICE_ABI } from '../lib/ABI/PriceAPI_ABI.ts';
 import { Token_ABI} from '../lib/ABI/TestToken_ABI.ts';
 import { SWAP_ABI } from '../lib/ABI/Swap_ABI.ts';
+import { AfriStable_ABI } from '@/lib/ABI/AfriStable_ABI.ts';
+import {Saving_ABI} from '@/lib/ABI/Saving_ABI.ts'
 import tokens from '@/lib/Tokens/tokens.ts';
 
 // Import or define the Token type
@@ -12,27 +13,31 @@ import type { Token } from '@/lib/Tokens/tokens.ts';
 
 // Contract addresses - replace with your actual contract addresses
 export const CONTRACT_ADDRESSES = {
-  swapAddress: '0x1E6E21b0F8a9c6A0840c8CC3aa1b97f921027708',
-  priceFeedAddress: '0x82683F9Fe41B395931a86CEF97D76CE3A737E704',
+  swapAddress: '0xdf4381E3D3D040575f297F7478BD5D71ca97Aeac',
+  priceFeedAddress: '0xF7147Ee61060e3A33DBEd03207413c9C456004BC',
+  afriStableAddress: '0xc5737615ed39b6B089BEDdE11679e5e1f6B9E768',
+  savingAddress: '0xe85b044a579e8787afFfBF46691a01E7052cF6D0'
 };
 
 // Lisk Sepolia chain ID
 const LISK_SEPOLIA_CHAIN_ID = 4202;
 
-// Context interface - keeping the same interface for backward compatibility
+// Enhanced context interface with Thirdweb integration
 interface ContractInstancesContextType {
   fetchBalance: (faucetAddress: string) => Promise<string | undefined>;
   SWAP_CONTRACT_INSTANCE: () => Promise<ethers.Contract | null>;
+  AFRISTABLE_CONTRACT_INSTANCE: () => Promise<ethers.Contract | null>;
   TEST_TOKEN_CONTRACT_INSTANCE: (tokenAddress: string) => Promise<ethers.Contract | null>;
   PRICEAPI_CONTRACT_INSTANCE: () => Promise<ethers.Contract | null>;
-  connectWallet: () => Promise<void>;
+  SAVING_CONTRACT_INSTANCE: () => Promise<ethers.Contract | null>;
   signer: ethers.Signer | null;
   address: string | null;
   nativeBalance: string | null;
   tokenList: Token[];
   isConnected: boolean;
-  isConnecting: boolean;
-  resetWalletConnection: () => void;
+  isCorrectNetwork: boolean;
+  networkError: string | null;
+  connectionError: string | null;
 }
 
 export const ContractInstances = createContext<ContractInstancesContextType | undefined>(undefined);
@@ -41,165 +46,201 @@ interface ContractInstanceProviderProps {
   children: ReactNode;
 }
 
-// Provider component
+// Provider component with updated Thirdweb integration
 export const ContractInstanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Wagmi hooks
-  const { address: wagmiAddress, isConnected: wagmiIsConnected, chain } = useAccount();
-  const { connect, status: connectStatus } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { switchChain } = useSwitchChain();
-  const { data: balanceData } = useBalance({
-    address: wagmiAddress,
-  });
+  // Thirdweb hooks
+  const account = useActiveAccount();
+  const wallet = useActiveWallet();
+  const activeChain = useActiveWalletChain();
 
-  // Local state for ethers integration
+  // Local state
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [nativeBalance, setNativeBalance] = useState<string>('0');
+  const [networkError, setNetworkError] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Derived state from Wagmi - maintaining same interface
-  const address = wagmiAddress || null;
-  const isConnected = wagmiIsConnected && chain?.id === LISK_SEPOLIA_CHAIN_ID;
-  const nativeBalance = balanceData ? ethers.formatEther(balanceData.value.toString()) : '0';
+  // Derived state
+  const address = account?.address || null;
+  const isConnected = !!account && !!wallet;
+  const isCorrectNetwork = activeChain?.id === LISK_SEPOLIA_CHAIN_ID;
 
-  // Connect wallet function using Wagmi
-  const connectWallet = async (): Promise<void> => {
-    setIsConnecting(true);
-    
-    try {
-      // Connect using Wagmi
-      await new Promise<void>((resolve, reject) => {
-        connect(
-          { connector: injected() },
-          {
-            onSuccess: () => resolve(),
-            onError: (error) => reject(error),
-          }
-        );
-      });
-
-      // Check if we're on the correct network
-      if (chain?.id !== LISK_SEPOLIA_CHAIN_ID) {
-        try {
-          await switchChain({ chainId: LISK_SEPOLIA_CHAIN_ID });
-        } catch (switchError: any) {
-          console.error('Failed to switch to Lisk Sepolia:', switchError);
-          throw new Error('Please switch to Lisk Sepolia network');
-        }
-      }
-
-      console.log('Successfully connected to Lisk Sepolia:', address);
-    } catch (error: any) {
-      console.error('Failed to connect wallet:', error);
-      throw error;
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  // Reset wallet connection
-  const resetWalletConnection = () => {
-    setIsConnecting(false);
-    setSigner(null);
-    disconnect();
-    console.log('Wallet connection state reset');
-  };
-
-  // Effect to create signer when wallet is connected and on correct network
+  // Effect to create signer from active account
   useEffect(() => {
-    const createSigner = async () => {
-      if (wagmiIsConnected && wagmiAddress && chain?.id === LISK_SEPOLIA_CHAIN_ID) {
+    const createSignerFromAccount = async () => {
+      if (account && wallet && isConnected && isCorrectNetwork) {
         try {
+          // Check if the browser has ethereum provider
           if (typeof window !== 'undefined' && window.ethereum) {
-            const provider = new BrowserProvider(window.ethereum);
+            // Create provider and get signer
+            const provider = new ethers.BrowserProvider(window.ethereum);
             const ethSigner = await provider.getSigner();
-            setSigner(ethSigner);
+            
+            // Verify the signer address matches the account
+            const signerAddress = await ethSigner.getAddress();
+            if (signerAddress.toLowerCase() === account.address.toLowerCase()) {
+              setSigner(ethSigner);
+              setConnectionError(null);
+            } else {
+              console.warn('Signer address mismatch with account');
+              setSigner(null);
+              setConnectionError('Address mismatch between wallet and signer');
+            }
+          } else {
+            console.warn('No ethereum provider found');
+            setSigner(null);
+            setConnectionError('No ethereum provider available');
           }
         } catch (error) {
-          console.error('Failed to create signer:', error);
+          console.error('Failed to create signer from account:', error);
           setSigner(null);
+          setConnectionError('Failed to create signer');
         }
       } else {
         setSigner(null);
       }
     };
 
-    createSigner();
-  }, [wagmiIsConnected, wagmiAddress, chain?.id]);
+    createSignerFromAccount();
+  }, [account, wallet, isConnected, isCorrectNetwork]);
 
-  // Update isConnecting state based on Wagmi's connection status
+  // Effect to fetch native balance when signer is available
   useEffect(() => {
-    if (connectStatus === 'pending') {
-      setIsConnecting(true);
-    } else if ((connectStatus === 'idle' || connectStatus === 'success' || connectStatus === 'error') && isConnecting) {
-      setIsConnecting(false);
+    const fetchNativeBalance = async () => {
+      if (signer && address && isConnected && isCorrectNetwork) {
+        try {
+          const provider = signer.provider;
+          if (provider) {
+            const balance = await provider.getBalance(address);
+            setNativeBalance(ethers.formatEther(balance));
+          }
+        } catch (error) {
+          console.error('Failed to fetch native balance:', error);
+          setNativeBalance('0');
+        }
+      } else {
+        setNativeBalance('0');
+      }
+    };
+
+    fetchNativeBalance();
+  }, [signer, address, isConnected, isCorrectNetwork]);
+
+  // Effect to handle network changes
+  useEffect(() => {
+    if (isConnected && activeChain?.id && activeChain.id !== LISK_SEPOLIA_CHAIN_ID) {
+      setNetworkError(`Connected to wrong network. Please switch to Lisk Sepolia (Chain ID: ${LISK_SEPOLIA_CHAIN_ID}).`);
+    } else if (isConnected && isCorrectNetwork) {
+      setNetworkError(null);
     }
-  }, [connectStatus, isConnecting]);
+  }, [activeChain?.id, isConnected, isCorrectNetwork]);
+
+  // Effect to clear state when disconnected
+  useEffect(() => {
+    if (!isConnected) {
+      setConnectionError(null);
+      setNetworkError(null);
+      setSigner(null);
+      setNativeBalance('0');
+    }
+  }, [isConnected]);
 
   // Fetch balance function
-  const fetchBalance = async (faucetAddress: string): Promise<string | undefined> => {
-    try {
-      if (!address) {
-        throw new Error('Address not available');
-      }
-
-      // Check if it's the native token
-      const nativeToken = tokens.find(token => token.address === faucetAddress);
-      if (nativeToken && nativeToken.symbol === 'ETH') {
-        return nativeBalance || '0';
-      } else {
-        // For ERC20 tokens
-        const TOKEN_CONTRACT = await TEST_TOKEN_CONTRACT_INSTANCE(faucetAddress);
-        if (!TOKEN_CONTRACT) {
-          throw new Error('Unable to create token contract instance');
-        }
-        const balance = await TOKEN_CONTRACT.balanceOf(address);
-        const formattedBalance = ethers.formatEther(balance);
-        return formattedBalance;
-      }
-    } catch (error) {
-      console.error('Error fetching balance:', error);
-      return undefined;
+const fetchBalance = async (faucetAddress: string): Promise<string | undefined> => {
+  try {
+    if (!address || !isConnected || !isCorrectNetwork) {
+      throw new Error('Wallet not connected or wrong network');
     }
-  };
 
-  // Contract instance functions - same as before
+    const token = tokens.find(token => token.address === faucetAddress);
+    if (!token) {
+      throw new Error('Token not found');
+    }
+
+    // Check if it's the native token
+    if (token.symbol === 'ETH') {
+      return nativeBalance || '0';
+    }
+
+    // Special case for AFX token
+    if (token.symbol === 'AFX') {
+      const AFRI_CONTRACT = await AFRISTABLE_CONTRACT_INSTANCE();
+      if (!AFRI_CONTRACT) {
+        throw new Error('Unable to create AFX token contract instance');
+      }
+      const balance = await AFRI_CONTRACT.balanceOf(address);
+      const formattedBalance = ethers.formatEther(balance);
+      return formattedBalance;
+    }
+
+    // For other ERC20 tokens
+    const TOKEN_CONTRACT = await TEST_TOKEN_CONTRACT_INSTANCE(faucetAddress);
+    if (!TOKEN_CONTRACT) {
+      throw new Error('Unable to create token contract instance');
+    }
+    const balance = await TOKEN_CONTRACT.balanceOf(address);
+    const formattedBalance = ethers.formatEther(balance);
+    return formattedBalance;
+
+  } catch (error) {
+    console.error('Error fetching balance:', error);
+    return undefined;
+  }
+};
+
+
+  // Contract instance functions
   const SWAP_CONTRACT_INSTANCE = async (): Promise<ethers.Contract | null> => {
-    if (!signer) {
-      console.warn('Signer not available. Please connect your wallet first.');
+    if (!signer || !isConnected || !isCorrectNetwork) {
+      console.warn('Wallet not properly connected or wrong network. Please connect your wallet first.');
       return null;
     }
     return new ethers.Contract(CONTRACT_ADDRESSES.swapAddress, SWAP_ABI, signer);
   };
 
   const PRICEAPI_CONTRACT_INSTANCE = async (): Promise<ethers.Contract | null> => {
-    if (!signer) {
-      console.warn('Signer not available. Please connect your wallet first.');
+    if (!signer || !isConnected || !isCorrectNetwork) {
+      console.warn('Wallet not properly connected or wrong network. Please connect your wallet first.');
       return null;
     }
     return new ethers.Contract(CONTRACT_ADDRESSES.priceFeedAddress, PRICE_ABI, signer);
   };
 
   const TEST_TOKEN_CONTRACT_INSTANCE = async (TOKEN_ADDRESS: string): Promise<ethers.Contract | null> => {
-    if (!signer) {
-      console.warn('Signer not available. Please connect your wallet first.');
+    if (!signer || !isConnected || !isCorrectNetwork) {
+      console.warn('Wallet not properly connected or wrong network. Please connect your wallet first.');
       return null;
     }
     return new ethers.Contract(TOKEN_ADDRESS, Token_ABI, signer);
   };
-
+  const AFRISTABLE_CONTRACT_INSTANCE = async (): Promise<ethers.Contract | null> => {
+    if (!signer || !isConnected || !isCorrectNetwork) {
+      console.warn('Wallet not properly connected or wrong network. Please connect your wallet first.');
+      return null;
+    }
+    return new ethers.Contract(CONTRACT_ADDRESSES.afriStableAddress, AfriStable_ABI, signer);
+  };
+   const SAVING_CONTRACT_INSTANCE = async (): Promise<ethers.Contract | null> => {
+    if (!signer || !isConnected || !isCorrectNetwork) {
+      console.warn('Wallet not properly connected or wrong network. Please connect your wallet first.');
+      return null;
+    }
+    return new ethers.Contract(CONTRACT_ADDRESSES.savingAddress, Saving_ABI, signer);
+  };
   const contextValue: ContractInstancesContextType = {
     fetchBalance,
     SWAP_CONTRACT_INSTANCE,
+    AFRISTABLE_CONTRACT_INSTANCE,
     TEST_TOKEN_CONTRACT_INSTANCE,
     PRICEAPI_CONTRACT_INSTANCE,
-    connectWallet,
+    SAVING_CONTRACT_INSTANCE,
     signer,
     address,
     nativeBalance,
     tokenList: tokens,
     isConnected,
-    isConnecting: isConnecting || connectStatus === 'pending',
-    resetWalletConnection,
+    isCorrectNetwork,
+    networkError,
+    connectionError,
   };
 
   return (

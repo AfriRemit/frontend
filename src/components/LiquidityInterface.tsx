@@ -1,12 +1,13 @@
 
 import React, { useState,useEffect } from 'react';
-import { Plus, Minus, Info, Droplets, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Info, Droplets, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
 import tokens from '@/lib/Tokens/tokens';
 import { ethers, formatEther, parseEther } from 'ethers';
 import { CONTRACT_ADDRESSES } from '@/provider/ContractInstanceProvider';
 import { toast} from 'react-toastify';
 import ToastIndex from './ToastIndex';
+import { roundToSevenDecimalPlaces, roundToTwoDecimalPlaces } from '../lib/utils';
 export interface Token {
   id: number
   symbol: string;
@@ -28,18 +29,12 @@ interface LiquidityPool {
 }
 
 
-const roundToSevenDecimalPlaces = (num) => {
-  return Math.round(num * 10000000) / 10000000;
-};
 
-const roundToTwoDecimalPlaces = (num) => {
-  return Math.round(num * 100) / 100;
-};
 
-const LiquidityInterface = () => {
+const LiquidityInterface = ({ onBackToSwap }) => {
   const [activeTab, setActiveTab] = useState('add');
   const [token1, setToken1] = useState('ETH');
-  const [token2, setToken2] = useState('AAVE');
+  const [token2, setToken2] = useState('AFR');
   const token1Address = tokens.find(t => t.symbol === token1)?.address;
   const token2Address = tokens.find(t => t.symbol === token2)?.address;
 
@@ -147,142 +142,147 @@ const LiquidityInterface = () => {
 useEffect(() => {
   let intervalId;
   
-  const fetchAllPoolsData = async () => {
-    try {
-      console.log('🔄 Starting liquidity pools fetch...');
-      setLoading(true);
-      
-      if (!SWAP_CONTRACT_INSTANCE || !isConnected || !tokens?.length) {
-        console.log('❌ Missing dependencies:', {
-          SWAP_CONTRACT_INSTANCE: !!SWAP_CONTRACT_INSTANCE,
-          isConnected,
-          tokensLength: tokens?.length || 0
-        });
-        setLoading(false);
-        return;
-      }
 
-      console.log('✅ All dependencies available, initializing contracts...');
-      const SWAP_CONTRACT = await SWAP_CONTRACT_INSTANCE();
-      const PRICE_FEED_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
-      
-      // Get all available pools
-      const availablePools = getAllLiquidityPoolsWithAddresses();
-      console.log('📋 Available pools:', availablePools);
-      
-      const structuredPools = [];
 
-      for (const pool of availablePools) {
-        try {
-          console.log(`\n🔍 Processing pool: ${pool.pair}`);
-          
-          const { tokenA, tokenB } = pool;
-          
-          // Fetch pool balances
-          console.log('   🏊 Fetching pool balances...');
-          const [poolBalance1, poolBalance2] = await SWAP_CONTRACT.getPoolSize(
-            tokenA.address, 
-            tokenB.address
-          );
-          
-          const poolBal1 = parseFloat(formatEther(poolBalance1));
-          const poolBal2 = parseFloat(formatEther(poolBalance2));
-          
-          console.log(`   Pool Balances: ${poolBal1} ${tokenA.symbol}, ${poolBal2} ${tokenB.symbol}`);
-          
-          // Get USD values for pool balances
-          console.log('   💰 Getting USD values for pool balances...');
-          const [poolUsdValue1, poolUsdValue2] = await Promise.all([
-            getTokenUSDValue(tokenA.address, poolBal1, PRICE_FEED_CONTRACT),
-            getTokenUSDValue(tokenB.address, poolBal2, PRICE_FEED_CONTRACT)
-          ]);
-          
-          const totalPoolLiquidity = poolUsdValue1 + poolUsdValue2;
-          console.log(`   Total pool liquidity: $${totalPoolLiquidity.toFixed(2)}`);
-          
-          // Get user's liquidity in this pool (if address is available)
-          let userLiquidity = 0;
-          let userShare = '0.0000';
-          let userTokenA = { amount: 0, usdValue: 0 };
-          let userTokenB = { amount: 0, usdValue: 0 };
-          let fees24h = '0.00';
-          
-          if (address) {
-            try {
-              console.log('   👤 Fetching user liquidity...');
-              // This would need to be implemented based on your contract's user liquidity method
-              // const [userAmountA, userAmountB] = await SWAP_CONTRACT.getUserLiquidity(address, tokenA.address, tokenB.address);
-              
-              // For now, we'll set to 0 - you'll need to implement this based on your contract
-              const userAmountA = 0;
-              const userAmountB = 0;
-              
-              if (userAmountA > 0 || userAmountB > 0) {
-                const [userUsdValueA, userUsdValueB] = await Promise.all([
-                  getTokenUSDValue(tokenA.address, userAmountA, PRICE_FEED_CONTRACT),
-                  getTokenUSDValue(tokenB.address, userAmountB, PRICE_FEED_CONTRACT)
-                ]);
-                
-                userLiquidity = userUsdValueA + userUsdValueB;
-                userShare = totalPoolLiquidity > 0 
-                  ? ((userLiquidity / totalPoolLiquidity) * 100).toFixed(4)
-                  : '0.0000';
-                
-                userTokenA = { amount: userAmountA, usdValue: userUsdValueA };
-                userTokenB = { amount: userAmountB, usdValue: userUsdValueB };
-                
-                // Calculate fees (implement based on your contract)
-                fees24h = '0.00'; // Placeholder
-              }
-            } catch (error) {
-              console.warn(`   ⚠️ Could not fetch user liquidity:`, error.message);
-            }
-          }
-          
-          const poolData = {
-            pair: pool.pair,
-            userLiquidity: userLiquidity,
-            userShare: userShare,
-            fees24h: fees24h,
-            totalLiquidity: totalPoolLiquidity,
-            tokenA: {
-              symbol: tokenA.symbol,
-              amount: userTokenA.amount,
-              usdValue: userTokenA.usdValue,
-              address: tokenA.address,
-              poolBalance: poolBal1,
-              poolUsdValue: poolUsdValue1
-            },
-            tokenB: {
-              symbol: tokenB.symbol,
-              amount: userTokenB.amount,
-              usdValue: userTokenB.usdValue,
-              address: tokenB.address,
-              poolBalance: poolBal2,
-              poolUsdValue: poolUsdValue2
-            }
-          };
+const fetchAllPoolsData = async () => {
+  try {
+    console.log('🔄 Starting liquidity pools fetch...');
+    setLoading(true);
 
-          structuredPools.push(poolData);
-          console.log(`   ✅ Pool ${pool.pair} processed successfully`);
-          
-        } catch (error) {
-          console.error(`   ❌ Error processing pool ${pool.pair}:`, error);
-        }
-      }
-
-      console.log(`\n🎯 Final structured pools (${structuredPools.length}):`, structuredPools);
-      setUserLiquidityPools(structuredPools);
-      console.log('✅ Liquidity pools fetch completed successfully');
-      
-    } catch (error) {
-      console.error('❌ Error fetching liquidity pools data:', error);
-      console.error('Error stack:', error.stack);
-    } finally {
+    if (!SWAP_CONTRACT_INSTANCE || !isConnected || !tokens?.length) {
+      console.log('❌ Missing dependencies:', {
+        SWAP_CONTRACT_INSTANCE: !!SWAP_CONTRACT_INSTANCE,
+        isConnected,
+        tokensLength: tokens?.length || 0
+      });
       setLoading(false);
+      return;
     }
-  };
 
+    console.log('✅ All dependencies available, initializing contracts...');
+    const SWAP_CONTRACT = await SWAP_CONTRACT_INSTANCE();
+    const PRICE_FEED_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
+
+    // Get all available pools
+    const availablePools = getAllLiquidityPoolsWithAddresses();
+    console.log('📋 Available pools:', availablePools);
+
+    const structuredPools = [];
+
+    for (const pool of availablePools) {
+      try {
+        console.log(`\n🔍 Processing pool: ${pool.pair}`);
+        const { tokenA, tokenB } = pool;
+
+        // Fetch pool balances
+        console.log('   🏊 Fetching pool balances...');
+        const [poolBalance1, poolBalance2] = await SWAP_CONTRACT.getPoolSize(
+          tokenA.address,
+          tokenB.address
+        );
+
+        const poolBal1 = roundToSevenDecimalPlaces(parseFloat(formatEther(poolBalance1)));
+        const poolBal2 = roundToSevenDecimalPlaces(parseFloat(formatEther(poolBalance2)));
+
+        console.log(`   Pool Balances: ${poolBal1} ${tokenA.symbol}, ${poolBal2} ${tokenB.symbol}`);
+
+        // Get USD values for pool balances
+        console.log('   💰 Getting USD values for pool balances...');
+        const [poolUsdValue1, poolUsdValue2] = await Promise.all([
+          getTokenUSDValue(tokenA.address, poolBal1, PRICE_FEED_CONTRACT),
+          getTokenUSDValue(tokenB.address, poolBal2, PRICE_FEED_CONTRACT)
+        ]);
+
+        const totalPoolLiquidity = poolUsdValue1 + poolUsdValue2;
+        console.log(`   Total pool liquidity: $${totalPoolLiquidity.toFixed(2)}`);
+
+        // User liquidity data
+        let userLiquidity = 0;
+        let userShare = '0.0000000';
+        let userTokenA = { amount: 0, usdValue: 0 };
+        let userTokenB = { amount: 0, usdValue: 0 };
+        let fees24h = '0.00';
+
+        if (address) {
+          try {
+            console.log('   👤 Fetching user liquidity...');
+
+            // Implement based on contract logic
+            const userAmountA = 0;
+            const userAmountB = 0;
+
+            if (userAmountA > 0 || userAmountB > 0) {
+              const [userUsdValueA, userUsdValueB] = await Promise.all([
+                getTokenUSDValue(tokenA.address, userAmountA, PRICE_FEED_CONTRACT),
+                getTokenUSDValue(tokenB.address, userAmountB, PRICE_FEED_CONTRACT)
+              ]);
+
+              userLiquidity = userUsdValueA + userUsdValueB;
+
+              userShare = totalPoolLiquidity > 0
+                ? roundToSevenDecimalPlaces((userLiquidity / totalPoolLiquidity) * 100).toString()
+                : '0.0000000';
+
+              userTokenA = {
+                amount: roundToSevenDecimalPlaces(userAmountA),
+                usdValue: roundToSevenDecimalPlaces(userUsdValueA)
+              };
+
+              userTokenB = {
+                amount: roundToSevenDecimalPlaces(userAmountB),
+                usdValue: roundToSevenDecimalPlaces(userUsdValueB)
+              };
+
+              fees24h = '0.00'; // Placeholder
+            }
+          } catch (error) {
+            console.warn(`   ⚠️ Could not fetch user liquidity:`, error.message);
+          }
+        }
+
+        const poolData = {
+          pair: pool.pair,
+          userLiquidity: roundToSevenDecimalPlaces(userLiquidity),
+          userShare,
+          fees24h,
+          totalLiquidity: roundToSevenDecimalPlaces(totalPoolLiquidity),
+          tokenA: {
+            symbol: tokenA.symbol,
+            amount: userTokenA.amount,
+            usdValue: userTokenA.usdValue,
+            address: tokenA.address,
+            poolBalance: poolBal1,
+            poolUsdValue: roundToSevenDecimalPlaces(poolUsdValue1)
+          },
+          tokenB: {
+            symbol: tokenB.symbol,
+            amount: userTokenB.amount,
+            usdValue: userTokenB.usdValue,
+            address: tokenB.address,
+            poolBalance: poolBal2,
+            poolUsdValue: roundToSevenDecimalPlaces(poolUsdValue2)
+          }
+        };
+
+        structuredPools.push(poolData);
+        console.log(`   ✅ Pool ${pool.pair} processed successfully`);
+
+      } catch (error) {
+        console.error(`   ❌ Error processing pool ${pool.pair}:`, error);
+      }
+    }
+
+    console.log(`\n🎯 Final structured pools (${structuredPools.length}):`, structuredPools);
+    setUserLiquidityPools(structuredPools);
+    console.log('✅ Liquidity pools fetch completed successfully');
+
+  } catch (error) {
+    console.error('❌ Error fetching liquidity pools data:', error);
+    console.error('Error stack:', error.stack);
+  } finally {
+    setLoading(false);
+  }
+};
   // Initial fetch
   fetchAllPoolsData();
 
@@ -736,21 +736,11 @@ const isNativeToken = (tokenAddress) => {
     return tokens.find(t => t.symbol === symbol)?.balance || 0;
   };
 
-  const calculateAmount2 = (value: string) => {
-    if (!value || !poolExists) return '';
-    // Simulate price ratios based on token pairs
-    let ratio = 1;
-    if (token1 === 'ETH' && token2 === 'AFR') ratio = 2150;
-    else if (token1 === 'ETH' && token2 === 'AAVE') ratio = 1.5;
-    else if (token1 === 'AFR' && token2 === 'ETH') ratio = 1/2150;
-    else if (token1 === 'AAVE' && token2 === 'ETH') ratio = 1/1.5;
-    
-    return (parseFloat(value) * ratio).toFixed(6);
-  };
+ 
 
   const handleAmount1Change = (value: string) => {
     setAmount1(value);
-    setAmount2(calculateAmount2(value));
+    
   };
 
   const handleToken1Change = (newToken1: string) => {
@@ -774,9 +764,7 @@ const isNativeToken = (tokenAddress) => {
     setPoolExists(poolExists);
     if (!poolExists) {
       setAmount2('');
-    } else if (amount1) {
-      setAmount2(calculateAmount2(amount1));
-    }
+    } 
   }, [token1, token2, amount1]);
 
   const availableToken1Options = getAvailableToken1Options();
@@ -900,7 +888,9 @@ const ADD_LIQUID=await SWAP_CONTRACT.provideLiquidity(POOL_ID, amount1inWei, {
   
   };
 
-
+const setMaxAmount1 = () => {
+  setAmount1(Bal1.toString());  
+}
 
     const REMOVE_LIQUID=async()=>{
       try{
@@ -919,8 +909,22 @@ const ADD_LIQUID=await SWAP_CONTRACT.provideLiquidity(POOL_ID, amount1inWei, {
       
     }
 
+
   return (
     <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8 space-y-8">
+
+    {/* Back to Swap Button */}
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={onBackToSwap}
+          className="flex items-center space-x-2 text-stone-600 hover:text-stone-900 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back to Swap</span>
+        </button>
+     
+      </div>
+
     <div className="space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-stone-800 mb-2">Liquidity</h1>
@@ -962,236 +966,275 @@ const ADD_LIQUID=await SWAP_CONTRACT.provideLiquidity(POOL_ID, amount1inWei, {
       </div>
 
      {activeTab === 'add' && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 mx-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-4">Add Liquidity</h3>
-          
-          <div className="space-y-4">
-            {/* Token 1 */}
-            <div className="bg-stone-50 rounded-xl p-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-stone-600 text-sm">Token 1</span>
-                <span className="text-stone-500 text-sm">
-                  Balance: {Bal1} {token1}
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <input
-                  type="number"
-                  value={amount1}
-                  onChange={(e) => handleAmount1Change(e.target.value)}
-                  disabled={!isConnected}
-                  className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder={isConnected ? "0.0" : "Connect wallet to enter amount"}
-                />
-                
-                <select
-                  value={token1}
-                  onChange={(e) => handleToken1Change(e.target.value)}
-                  disabled={!isConnected}
-                  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {availableToken1Options.map(token => (
-                    <option key={token.symbol} value={token.symbol}>
-                      {token.symbol}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <Plus className="w-5 h-5 text-stone-400" />
-            </div>
-
-            {/* Token 2 */}
-            <div className="bg-stone-50 rounded-xl p-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-stone-600 text-sm">Token 2</span>
-                <span className="text-stone-500 text-sm">
-                  Balance: {Bal2} {token2}
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <input
-                  type="number"
-                  value={amount2}
-                  readOnly
-                  className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none text-stone-800"
-                  placeholder="0.0"
-                />
-                
-                <select
-                  value={token2}
-                  onChange={(e) => handleToken2Change(e.target.value)}
-                  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={availableToken2Options.length === 0 || !isConnected}
-                >
-                  {availableToken2Options.map(token => (
-                    <option key={token?.symbol} value={token?.symbol}>
-                      {token?.symbol}
-                    </option>
-                  ))}
-                  {availableToken2Options.length === 0 && (
-                    <option value="">No pools available</option>
-                  )}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Pool Status Warning */}
-          {!poolExists && (
-            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start space-x-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-amber-800 font-medium text-sm">No Liquidity Pool</p>
-                <p className="text-amber-700 text-sm">
-                  There's no existing liquidity pool for {token1}/{token2}. 
-                  Please select tokens with available pools.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Real Pool Balances Info */}
-          {isConnected && poolBal1 !== null && poolBal2 !== null && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-              <div className="flex items-center space-x-2 mb-2">
-                <Info className="w-4 h-4 text-green-600" />
-                <span className="text-green-800 font-medium text-sm">Current Pool Liquidity</span>
-              </div>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-green-700">{token1} in Pool:</span>
-                  <span className="font-medium text-green-800">{poolBal1?.toFixed(6) || '0'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-green-700">{token2} in Pool:</span>
-                  <span className="font-medium text-green-800">{poolBal2?.toFixed(6) || '0'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-green-700">Total Pool Value:</span>
-                  <span className="font-medium text-green-800">{((poolBal1 || 0) + (poolBal2 || 0)).toFixed(6)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Available Pools Info */}
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <div className="flex items-center space-x-2 mb-2">
-              <Info className="w-4 h-4 text-blue-600" />
-              <span className="text-blue-800 font-medium text-sm">Available Pools</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {getAllLiquidityPools().map(pool => (
-                <span key={pool} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                  {pool}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {amount1 && poolExists && isConnected && (
-            <div className="mt-6 p-4 bg-stone-50 rounded-xl">
-              <div className="flex items-center space-x-2 mb-3">
-                <Info className="w-4 h-4 text-stone-500" />
-                <span className="text-stone-600 text-sm font-medium">Liquidity Details</span>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-stone-600">Pool Share</span>
-                  <span className="font-medium">
-                    {poolBal1 && poolBal2 && amount1 && amount2 ? 
-                      `~${(((parseFloat(amount1) + parseFloat(amount2)) / ((poolBal1 + poolBal2) + (parseFloat(amount1) + parseFloat(amount2)))) * 100).toFixed(3)}%` : 
-                      '~0.01%'
-                    }
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-600">LP Tokens</span>
-                  <span className="font-medium">
-                    {amount1 && amount2 ? 
-                      Math.sqrt(parseFloat(amount1) * parseFloat(amount2)).toFixed(6) : 
-                      '0'
-                    }
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-600">Estimated APY</span>
-                  <span className="font-medium text-green-600">15.2%</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Loading state */}
-          {isEstimate && (
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
-                <span className="text-yellow-800 text-sm">Calculating optimal amount...</span>
-              </div>
-            </div>
-          )}
-
-          {/* Approval Section */}
-      <div className="approval-section">
-        {/* Token 1 Approval - only if ERC20 */}
-        {!token1IsNative && (
-          <button 
-          className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={ApproveToken1}
-            disabled={isApprove1 || hasApproveOne || !amount1}
-          >
-            {isApprove1 ? 'Approving...' : 
-             hasApproveOne ? '✓ Approved' : 
-             `Approve ${token1}`}
-          </button>
-        )}
-        
-        {/* Token 2 Approval - only if ERC20 */}
-        {!token2IsNative && (
-          <button 
-        className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={ApproveToken2}
-            disabled={isApprove1 || hasApproveTwo || !amount2Rate}
-          >
-            {isApprove2 ? 'Approving...' : 
-             hasApproveTwo ? '✓ Approved' : 
-             `Approve ${token2}`}
-          </button>
+     <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200 mx-4">
+  <h3 className="text-lg font-semibold text-stone-800 mb-4">Add Liquidity</h3>
+  
+  <div className="space-y-4">
+    {/* Token 1 */}
+    <div className="bg-stone-50 rounded-xl p-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-stone-600 text-sm">Token 1</span>
+        {address && !isNaN(Bal1) && (
+          <span className="text-stone-500 text-sm">
+            Balance: {Bal1} {token1}
+          </span>
         )}
       </div>
       
-      {/* Main Action Button */}
-  <button 
-  onClick={AddLiquidity}
-  className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-  disabled={
-    isAddLiquid ||
-    !isConnected || 
-    !poolExists || 
-    !amount1 || 
-    isEstimate ||
-    (!token1IsNative && !hasApproveOne) ||
-    (!token2IsNative && !hasApproveTwo)
-  }
->
-  {isAddLiquid ? 'Adding Liquid...' :
-   !isConnected ? 'Connect Wallet' :
-   !poolExists ? 'Pool not available' :
-   !amount1 ? 'Enter amount' :
-   isEstimate ? 'Calculating...' :
-   (!token1IsNative && !hasApproveOne) ? `Approve ${token1} First` :
-   (!token2IsNative && !hasApproveTwo) ? `Approve ${token2} First` :
-   'Add Liquidity'}
-</button>
-
+      <div className="flex items-center justify-between">
+        <input
+          type="text"
+          inputMode="decimal"
+          pattern="[0-9]*[.,]?[0-9]*"
+          value={amount1}
+          onChange={(e) => handleAmount1Change(e.target.value)}
+          disabled={!isConnected}
+          className="w-40 text-2xl font-semibold bg-transparent border-none outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          placeholder={isConnected ? "0.0" : "Connect wallet"}
+        />
+        
+        <div className="flex items-center space-x-2 ml-6">
+          {tokens.find(t => t.symbol === token1)?.img && (
+            <img
+              src={tokens.find(t => t.symbol === token1)?.img}
+              alt={token1}
+              className="w-8 h-8 rounded-full"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          )}
+          <select
+            value={token1}
+            onChange={(e) => handleToken1Change(e.target.value)}
+            disabled={!isConnected}
+            className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {availableToken1Options.map(token => (
+              <option key={token.symbol} value={token.symbol}>
+                {token.symbol}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      <button 
+        onClick={setMaxAmount1}
+        className="text-terracotta text-sm mt-2 hover:underline"
+        disabled={!isConnected}
+      >
+        Max
+      </button>
     </div>
+
+    <div className="flex justify-center">
+      <Plus className="w-5 h-5 text-stone-400" />
+    </div>
+
+    {/* Token 2 */}
+    <div className="bg-stone-50 rounded-xl p-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-stone-600 text-sm">Token 2</span>
+        {address && !isNaN(Bal2) && (
+          <span className="text-stone-500 text-sm">
+            Balance: {Bal2} {token2}
+          </span>
+        )}
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <input
+          type="text"
+          inputMode="decimal"
+          pattern="[0-9]*[.,]?[0-9]*"
+          value={amount2}
+          readOnly
+          className="w-40 text-2xl font-semibold bg-transparent border-none outline-none text-stone-800"
+          placeholder="0.0"
+        />
+        
+        <div className="flex items-center space-x-2 ml-6">
+          {tokens.find(t => t.symbol === token2)?.img && (
+            <img
+              src={tokens.find(t => t.symbol === token2)?.img}
+              alt={token2}
+              className="w-8 h-8 rounded-full"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          )}
+          <select
+            value={token2}
+            onChange={(e) => handleToken2Change(e.target.value)}
+            className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={availableToken2Options.length === 0 || !isConnected}
+          >
+            {availableToken2Options.map(token => (
+              <option key={token?.symbol} value={token?.symbol}>
+                {token?.symbol}
+              </option>
+            ))}
+            {availableToken2Options.length === 0 && (
+              <option value="">No pools available</option>
+            )}
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Pool Status Warning */}
+  {!poolExists && (
+    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start space-x-3">
+      <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+      <div>
+        <p className="text-amber-800 font-medium text-sm">No Liquidity Pool</p>
+        <p className="text-amber-700 text-sm">
+          There's no existing liquidity pool for {token1}/{token2}. 
+          Please select tokens with available pools.
+        </p>
+      </div>
+    </div>
+  )}
+
+  {/* Real Pool Balances Info */}
+  {isConnected && poolBal1 !== null && poolBal2 !== null && (
+    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+      <div className="flex items-center space-x-2 mb-2">
+        <Info className="w-4 h-4 text-green-600" />
+        <span className="text-green-800 font-medium text-sm">Current Pool Liquidity</span>
+      </div>
+      <div className="space-y-1 text-sm">
+        <div className="flex justify-between">
+          <span className="text-green-700">{token1} in Pool:</span>
+          <span className="font-medium text-green-800">{poolBal1?.toFixed(6) || '0'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-green-700">{token2} in Pool:</span>
+          <span className="font-medium text-green-800">{poolBal2?.toFixed(6) || '0'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-green-700">Total Pool Value:</span>
+          <span className="font-medium text-green-800">{((poolBal1 || 0) + (poolBal2 || 0)).toFixed(6)}</span>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Available Pools Info */}
+  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+    <div className="flex items-center space-x-2 mb-2">
+      <Info className="w-4 h-4 text-blue-600" />
+      <span className="text-blue-800 font-medium text-sm">Available Pools</span>
+    </div>
+    <div className="flex flex-wrap gap-2">
+      {getAllLiquidityPools().map(pool => (
+        <span key={pool} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+          {pool}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  {amount1 && poolExists && isConnected && (
+    <div className="mt-6 p-4 bg-stone-50 rounded-xl">
+      <div className="flex items-center space-x-2 mb-3">
+        <Info className="w-4 h-4 text-stone-500" />
+        <span className="text-stone-600 text-sm font-medium">Liquidity Details</span>
+      </div>
+      
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-stone-600">Pool Share</span>
+          <span className="font-medium">
+            {poolBal1 && poolBal2 && amount1 && amount2 ? 
+              `~${(((parseFloat(amount1) + parseFloat(amount2)) / ((poolBal1 + poolBal2) + (parseFloat(amount1) + parseFloat(amount2)))) * 100).toFixed(3)}%` : 
+              '~0.01%'
+            }
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-stone-600">LP Tokens</span>
+          <span className="font-medium">
+            {amount1 && amount2 ? 
+              Math.sqrt(parseFloat(amount1) * parseFloat(amount2)).toFixed(6) : 
+              '0'
+            }
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-stone-600">Estimated APY</span>
+          <span className="font-medium text-green-600">15.2%</span>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Loading state */}
+  {isEstimate && (
+    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+      <div className="flex items-center space-x-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
+        <span className="text-yellow-800 text-sm">Calculating optimal amount...</span>
+      </div>
+    </div>
+  )}
+
+  {/* Approval Section */}
+  <div className="approval-section">
+    {/* Token 1 Approval - only if ERC20 */}
+    {!token1IsNative && (
+      <button 
+        className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={ApproveToken1}
+        disabled={isApprove1 || hasApproveOne || !amount1}
+      >
+        {isApprove1 ? 'Approving...' : 
+         hasApproveOne ? '✓ Approved' : 
+         `Approve ${token1}`}
+      </button>
+    )}
+    
+    {/* Token 2 Approval - only if ERC20 */}
+    {!token2IsNative && (
+      <button 
+        className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={ApproveToken2}
+        disabled={isApprove1 || hasApproveTwo || !amount2Rate}
+      >
+        {isApprove2 ? 'Approving...' : 
+         hasApproveTwo ? '✓ Approved' : 
+         `Approve ${token2}`}
+      </button>
+    )}
+  </div>
+  
+  {/* Main Action Button */}
+  <button 
+    onClick={AddLiquidity}
+    className="w-full mt-6 bg-gradient-to-r from-terracotta to-sage text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    disabled={
+      isAddLiquid ||
+      !isConnected || 
+      !poolExists || 
+      !amount1 || 
+      isEstimate ||
+      (!token1IsNative && !hasApproveOne) ||
+      (!token2IsNative && !hasApproveTwo)
+    }
+  >
+    {isAddLiquid ? 'Adding Liquid...' :
+     !isConnected ? 'Connect Wallet' :
+     !poolExists ? 'Pool not available' :
+     !amount1 ? 'Enter amount' :
+     isEstimate ? 'Calculating...' :
+     (!token1IsNative && !hasApproveOne) ? `Approve ${token1} First` :
+     (!token2IsNative && !hasApproveTwo) ? `Approve ${token2} First` :
+     'Add Liquidity'}
+  </button>
+</div>
         
       )}
     </div>

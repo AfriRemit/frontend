@@ -3,7 +3,7 @@ export const SWAP_ABI=[
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_priceApI",
+				"name": "_priceAPI",
 				"type": "address"
 			},
 			{
@@ -139,13 +139,13 @@ export const SWAP_ABI=[
 			{
 				"indexed": false,
 				"internalType": "address",
-				"name": "",
+				"name": "sender",
 				"type": "address"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "",
+				"name": "amount",
 				"type": "uint256"
 			}
 		],
@@ -345,6 +345,19 @@ export const SWAP_ABI=[
 				"internalType": "address",
 				"name": "",
 				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPoolId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",

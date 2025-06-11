@@ -60,6 +60,7 @@
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "thirdweb": "^5.102.6",
     "vaul": "^0.9.3",
     "viem": "^2.30.6",
     "wagmi": "^2.15.5",
