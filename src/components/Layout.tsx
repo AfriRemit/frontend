@@ -59,10 +59,10 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { name: 'Save', key: 'savings', icon: PiggyBank },
     //{ name: 'Family Pay', key: 'family', icon: Users },
    // { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
-    { name: 'Suite', key: 'faucet', icon: Droplets },
+    { name: 'Faucet', key: 'faucet', icon: Droplets },
      { name: 'Buy/Sell', key: 'Buy/Sell', icon: DollarSignIcon  },
       { name: 'Admin', key: 'admin', icon: Shield },
-      { name: 'Utility Payment', key: 'utility', icon: Zap },
+      { name: 'UtilityPay', key: 'utility', icon: Zap },
 
 
   ];
