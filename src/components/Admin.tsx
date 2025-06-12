@@ -40,6 +40,8 @@ const CREATE_POOL = async () => {
     const poolId = await SWAP_CONTRACT.getPoolId();
     console.log(`Pool ID: ${poolId}`);
 
+    alert(`Pool created successfully! ID: ${poolId.toString()}`);
+
     // Show toast with token pair and pool ID
     toast.success(`✅ Pool Created: ${token1}/${token2} → ID: ${poolId.toString()}`);
 

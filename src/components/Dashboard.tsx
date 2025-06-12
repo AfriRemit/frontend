@@ -132,28 +132,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
   };
 
   useEffect(() => {
-    const fetchBalances = async () => {
-      if (!token1Address || !isConnected) return;
+    // Replace this section in your fetchBalances function:
 
-      try {
-        const bal = await fetchBalance(token1Address);
-        const roundedBal = roundToTwoDecimalPlaces(Number(bal));
-        setBal1(roundedBal);
+const fetchBalances = async () => {
+  if (!token1Address || !isConnected) return;
 
-        // Get latest USD value for the balance using contract price
-        if (roundedBal > 0) {
-          const usdVal = await calculateUSDValue(token1Address, roundedBal);
-          console.log(`Balance: ${roundedBal}, USD Value: ${usdVal}`);
-          setUsdValue(roundToTwoDecimalPlaces(usdVal));
-          
-          // Store the current token price
-          const price = await getLatestTokenPrice(token1Address);
-          setCurrentTokenPrice(price);
-        }
-      } catch (err) {
-        console.error('Error fetching balance:', err);
-      }
-    };
+  try {
+    const bal = await fetchBalance(token1Address);
+    
+    // Add this validation before processing the balance
+    const numericBal = Number(bal);
+    const roundedBal = isNaN(numericBal) || numericBal < 0 ? 0 : roundToTwoDecimalPlaces(numericBal);
+    
+    setBal1(roundedBal);
+
+    // Get latest USD value for the balance using contract price
+    if (roundedBal > 0) {
+      const usdVal = await calculateUSDValue(token1Address, roundedBal);
+      console.log(`Balance: ${roundedBal}, USD Value: ${usdVal}`);
+      setUsdValue(roundToTwoDecimalPlaces(usdVal));
+      
+      // Store the current token price
+      const price = await getLatestTokenPrice(token1Address);
+      setCurrentTokenPrice(price);
+    } else {
+      // Set default values when balance is 0 or invalid
+      setUsdValue(0);
+      setCurrentTokenPrice(0);
+    }
+  } catch (err) {
+    console.error('Error fetching balance:', err);
+    // Set default values on error
+    setBal1(0);
+    setUsdValue(0);
+    setCurrentTokenPrice(0);
+  }
+};
 
     fetchBalances();
   }, [token1Address, isConnected, PRICEAPI_CONTRACT_INSTANCE]);

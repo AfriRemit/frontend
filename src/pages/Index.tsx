@@ -13,6 +13,7 @@ import Profile from '../components/Profile';
 import Faucet from '../components/Faucet';
 import OnrampOfframpInterface from '@/components/BuyandSellInterface';
 import AdminInterface from '@/components/Admin';
+import UtilityPaymentInterface from '../components/UtilityInterface';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -41,8 +42,11 @@ const Index = () => {
         return <Faucet />;
       case 'Buy/Sell':
         return <OnrampOfframpInterface />; 
+      case 'utility':
+        return <UtilityPaymentInterface />;
       case 'admin':
-        return <AdminInterface />; 
+        return <AdminInterface />;
+
       default:
         return <Dashboard onPageChange={setCurrentPage} />;
     }

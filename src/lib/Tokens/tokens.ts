@@ -63,8 +63,8 @@ const tokens: Token[] = [
     name: 'AfriStable', 
     balance: 1250,
     address: '0xc5737615ed39b6B089BEDdE11679e5e1f6B9E768', // Replace with actual AfriCoin contract address
-    pool: [],
-    poolId: [],
+    pool: ["cZAR", "USDT"],
+    poolId: [5,6],
     img: 'https://www.xe.com/svgs/flags/ngn.static.svg',
         
   },
@@ -75,8 +75,8 @@ const tokens: Token[] = [
     balance: 1250,
     address: '0x278ccC9E116Ac4dE6c1B2Ba6bfcC81F25ee48429', // Replace with actual AfriCoin contract address
   
-    pool: [],
-    poolId: [],
+    pool: ["cZAR"],
+    poolId: [3],
     img: 'https://www.xe.com/svgs/flags/ngn.static.svg',
         
   },
@@ -97,8 +97,8 @@ const tokens: Token[] = [
     name: 'Crypto Ghanaian Cedi', 
     balance: 1250,
     address: '0x19a8a27E066DD329Ed78F500ca7B249D40241dC4', // Replace with actual AfriCoin contract address
-    pool: [],
-    poolId: [],
+    pool: ["cKES"],
+    poolId: [4],
     
     img: 'https://www.xe.com/svgs/flags/ghs.static.svg',
         

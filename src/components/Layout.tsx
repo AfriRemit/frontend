@@ -21,6 +21,7 @@ import {
   DollarSignIcon,
   Home,
   LogOut,
+  Zap,
   AlertTriangle
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -60,6 +61,8 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { name: 'Token Suite', key: 'faucet', icon: Droplets },
      { name: 'Buy/Sell', key: 'Buy/Sell', icon: DollarSignIcon  },
       { name: 'Admin', key: 'admin', icon: Shield },
+      { name: 'Utility Payment', key: 'utility', icon: Zap },
+
 
   ];
 

@@ -69,9 +69,9 @@ const SendMoney = () => {
   }, [isConnected, address]);
 
   const handleTokenChange = (tokenId) => {
-    const token = tokens.find(t => t.id === parseInt(tokenId));
-    setSelectedToken(token);
-  };
+  const token = tokenList.find(t => t.id === parseInt(tokenId));  // ✅ Using tokenList with fetched balances
+  setSelectedToken(token);
+};
 
   const validateTransfer = () => {
     if (!recipient) {
@@ -269,17 +269,17 @@ const SendMoney = () => {
                 Select Token
               </label>
               <div className="relative">
-                <select
-                  value={selectedToken.id}
-                  onChange={(e) => handleTokenChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                >
-                  {tokens.map(token => (
-                    <option key={token.id} value={token.id}>
-                      {token.symbol} - Balance: {loadingBalances ? 'Loading...' : token.balance}
-                    </option>
-                  ))}
-                </select>
+              <select
+  value={selectedToken.id}
+  onChange={(e) => handleTokenChange(e.target.value)}
+  className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+>
+  {tokenList.map(token => (  // ✅ Using tokenList state with fetched balances
+    <option key={token.id} value={token.id}>
+      {token.symbol} - Balance: {loadingBalances ? 'Loading...' : token.balance}
+    </option>
+  ))}
+</select>
                 {loadingBalances && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <div className="w-4 h-4 border-2 border-stone-300 border-t-orange-500 rounded-full animate-spin"></div>

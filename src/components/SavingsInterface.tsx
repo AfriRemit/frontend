@@ -30,6 +30,12 @@ const [showAgentRegistration, setShowAgentRegistration] = useState(false);
   const [totalStats, setTotalStats] = useState(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [userName, setUserName] = useState('');
+
+  const [showInviteModal, setShowInviteModal] = useState(false);
+const [selectedGroupId, setSelectedGroupId] = useState(null);
+const [maxUses, setMaxUses] = useState(10);
+const [validityDays, setValidityDays] = useState(30);
+
   
   const { isConnected, SAVING_CONTRACT_INSTANCE, TEST_TOKEN_CONTRACT_INSTANCE,AFRISTABLE_CONTRACT_INSTANCE, address } = useContractInstances();
 
@@ -64,7 +70,7 @@ const [showAgentRegistration, setShowAgentRegistration] = useState(false);
     const now = Math.floor(Date.now() / 1000);
     const remaining = Number(timestamp) - now;
     
-    if (remaining <= 0) return "Pending";
+    if (remaining <= 0) return "Expired";
     
     const days = Math.floor(remaining / 86400);
     const hours = Math.floor((remaining % 86400) / 3600);
@@ -108,6 +114,9 @@ const initializeData = async () => {
         userGroupIds.map(async (groupId) => {
           const summary = await Saving_Contract.getGroupSummary(groupId);
           console.log('summarry',summary)
+
+          const savingInfo= await Saving_Contract.savingsGroups(groupId);
+          console.log('savingInfo',savingInfo)
           const contributionStatus = await Saving_Contract.getUserContributionStatus(groupId, address);
           
           // Get invite code for groups created by the user
@@ -399,10 +408,6 @@ const handleGenerateInviteCode = async (groupId) => {
   try {
     const Saving_Contract = await SAVING_CONTRACT_INSTANCE();
     
-    // Default values - you can modify these or make them configurable
-    const maxUses = 10; // Maximum number of times the code can be used
-    const validityDays = 30; // Code valid for 30 days
-    
     const tx = await Saving_Contract.generateInviteCode(
       groupId,
       maxUses,
@@ -410,6 +415,12 @@ const handleGenerateInviteCode = async (groupId) => {
     );
     
     await tx.wait();
+    
+    // Close modal and reset values
+    setShowInviteModal(false);
+    setSelectedGroupId(null);
+    setMaxUses(10);
+    setValidityDays(30);
     
     // Refresh the groups data to show the new invite code
     await initializeData();
@@ -920,7 +931,7 @@ const handleCopyInviteCode = async (inviteCode) => {
     ) : (
       <div className="space-y-8">
         {/* Groups I Created Section */}
-      {myGroups.filter(group => group[2] === address && !group[11]).length > 0 && (
+   {myGroups.filter(group => group[2] === address && !group[11]).length > 0 && (
           <div>
             <h4 className="text-md font-medium text-stone-700 mb-4 flex items-center">
               <Crown className="w-5 h-5 mr-2 text-amber-600" />
@@ -928,7 +939,7 @@ const handleCopyInviteCode = async (inviteCode) => {
             </h4>
             <div className="space-y-4">
               {myGroups
-                .filter(group => group[2] === address)
+                .filter(group => group[2] === address && !group[11]) // Add !group[11] here too
                 .map((group) => (
                   <div key={group[0]} className="bg-stone-50 rounded-xl p-6 border-l-4 border-amber-500">
                     <div className="flex items-start justify-between mb-4">
@@ -944,54 +955,56 @@ const handleCopyInviteCode = async (inviteCode) => {
                           <span className="text-amber-600 text-sm font-medium">Creator</span>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        
-                        {/* Invite Code Management */}
-                        <div className="flex flex-col space-y-2">
-                          {group.inviteCode && group.inviteCode !== "0" && group.inviteCode !== "" ? (
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs text-stone-600 bg-stone-200 px-2 py-1 rounded">
-                                Code: {group.inviteCode}
-                              </span>
-                              <button
-                                onClick={() => handleDeactivateInviteCode(group.inviteCode)}
-                                disabled={isProcessing}
-                                className="text-red-600 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                              >
-                                Deactivate
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleGenerateInviteCode(group[0])}
-                              disabled={isProcessing}
-                              className="text-blue-600 hover:text-blue-700 text-xs px-2 py-1 border border-blue-200 rounded hover:bg-blue-50 transition-colors disabled:opacity-50"
-                            >
-                              Generate Invite
-                            </button>
-                          )}
-                        </div>
+                     <div className="flex space-x-2">
+  {/* Invite Code Management */}
+  <div className="flex flex-col space-y-2">
+    {group.inviteCode && group.inviteCode !== "0" && group.inviteCode !== "" ? (
+      <div className="flex items-center space-x-2">
+        <span className="text-xs text-stone-600 bg-stone-200 px-2 py-1 rounded">
+          Code: {group.inviteCode}
+        </span>
+        <button
+          onClick={() => handleDeactivateInviteCode(group.inviteCode)}
+          disabled={isProcessing}
+          className="text-red-600 hover:text-red-700 text-xs px-2 py-1 border border-red-200 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+        >
+          Deactivate
+        </button>
+      </div>
+    ) : (
+      <button
+        onClick={() => {
+          setSelectedGroupId(group[0]);
+          setShowInviteModal(true);
+        }}
+        disabled={isProcessing}
+        className="text-blue-600 hover:text-blue-700 text-xs px-2 py-1 border border-blue-200 rounded hover:bg-blue-50 transition-colors disabled:opacity-50"
+      >
+        Generate Invite
+      </button>
+    )}
+  </div>
 
-                        {group[14] === address && group[10] && (
-                          <button
-                            onClick={() => handleClaimPayout(group[0])}
-                            disabled={isProcessing}
-                            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                          >
-                            Claim Payout
-                          </button>
-                        )}
-                        
-                        {group[10] && !group.contributionStatus?.[0] && (
-                          <button
-                            onClick={() => handleContribute(group[0],group[4], group[5])}
-                            disabled={isProcessing}
-                            className="bg-terracotta text-white px-4 py-2 rounded-lg hover:bg-terracotta/90 transition-colors disabled:opacity-50"
-                          >
-                            Contribute
-                          </button>
-                        )}
-                      </div>
+  {group[14] === address && group[10] && (
+    <button
+      onClick={() => handleClaimPayout(group[0])}
+      disabled={isProcessing}
+      className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+    >
+      Claim Payout
+    </button>
+  )}
+
+  {group[10] && !group.contributionStatus?.[0] && (
+    <button
+      onClick={() => handleContribute(group[0],group[4], group[5])}
+      disabled={isProcessing}
+      className="bg-terracotta text-white px-4 py-2 rounded-lg hover:bg-terracotta/90 transition-colors disabled:opacity-50"
+    >
+      Contribute
+    </button>
+  )}
+</div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -1015,15 +1028,17 @@ const handleCopyInviteCode = async (inviteCode) => {
                         </p>
                       </div>
 
-                      <div className="bg-white rounded-lg p-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Clock className="w-4 h-4 text-stone-500" />
-                          <span className="text-stone-600 text-sm">Next Deadline</span>
-                        </div>
-                        <p className="font-semibold text-stone-800">
-                          {getTimeRemaining(group[13])}
-                        </p>
-                      </div>
+                    <div className="bg-white rounded-lg p-4">
+  <div className="flex items-center space-x-2 mb-2">
+    <Clock className="w-4 h-4 text-stone-500" />
+    <span className="text-stone-600 text-sm">
+      {group[10] ? 'Next Deadline' : 'Status'}
+    </span>
+  </div>
+  <p className="font-semibold text-stone-800">
+    {group[10] ? getTimeRemaining(group[13]) : 'Not Started'}
+  </p>
+</div>
                     </div>
 
                     {group[14] && group[14] !== "0x0000000000000000000000000000000000000000" && (
@@ -1042,7 +1057,7 @@ const handleCopyInviteCode = async (inviteCode) => {
                         {group.contributionStatus[0] ? (
                           <>
                             <CheckCircle className="w-5 h-5 text-emerald-600" />
-                            <span className="text-emerald-600 font-medium">Contributed for this round</span>
+                            <span className="text-emergreen-600 font-medium">Contributed for this round</span>
                           </>
                         ) : (
                           <>
@@ -1059,7 +1074,6 @@ const handleCopyInviteCode = async (inviteCode) => {
             </div>
           </div>
         )}
-
         {/* Groups I Joined Section */}
        {myGroups.filter(group => group[2] !== address && !group[11]).length > 0 && (
           <div>
@@ -1132,15 +1146,18 @@ const handleCopyInviteCode = async (inviteCode) => {
                         </p>
                       </div>
 
-                      <div className="bg-white rounded-lg p-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Clock className="w-4 h-4 text-stone-500" />
-                          <span className="text-stone-600 text-sm">Next Deadline</span>
-                        </div>
-                        <p className="font-semibold text-stone-800">
-                          {getTimeRemaining(group[13])}
-                        </p>
-                      </div>
+
+<div className="bg-white rounded-lg p-4">
+  <div className="flex items-center space-x-2 mb-2">
+    <Clock className="w-4 h-4 text-stone-500" />
+    <span className="text-stone-600 text-sm">
+      {group[10] ? 'Next Deadline' : 'Status'}
+    </span>
+  </div>
+  <p className="font-semibold text-stone-800">
+    {group[10] ? getTimeRemaining(group[13]) : 'Not Started'}
+  </p>
+</div>
                     </div>
 
                     {group[14] && group[14] !== "0x0000000000000000000000000000000000000000" && (
@@ -1402,7 +1419,63 @@ const handleCopyInviteCode = async (inviteCode) => {
   </div>
 </div>
       )}
+{showInviteModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 w-96 max-w-md">
+      <h3 className="text-lg font-semibold text-stone-800 mb-4">Generate Invite Code</h3>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-stone-700 text-sm font-medium mb-2">
+            Maximum Uses
+          </label>
+          <input
+            type="number"
+            value={maxUses}
+            onChange={(e) => setMaxUses(parseInt(e.target.value) || 1)}
+            min="1"
+            max="100"
+            className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta"
+            placeholder="10"
+          />
+          <p className="text-xs text-stone-500 mt-1">How many people can use this code</p>
+        </div>
 
+        <div>
+          <label className="block text-stone-700 text-sm font-medium mb-2">
+            Validity (Days)
+          </label>
+          <input
+            type="number"
+            value={validityDays}
+            onChange={(e) => setValidityDays(parseInt(e.target.value) || 1)}
+            min="1"
+            max="365"
+            className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracotta"
+            placeholder="30"
+          />
+          <p className="text-xs text-stone-500 mt-1">How many days the code will be valid</p>
+        </div>
+      </div>
+
+      <div className="flex space-x-3 mt-6">
+        <button
+          onClick={() => setShowInviteModal(false)}
+          className="flex-1 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => handleGenerateInviteCode(selectedGroupId)}
+          disabled={isProcessing}
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {isProcessing ? 'Generating...' : 'Generate'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {/* Footer */}
       <div className="text-center py-6 border-t border-stone-200">
         <p className="text-stone-500 text-sm">
