@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
+import { Link } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -53,12 +54,12 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   // Complete navigation list with all pages
   const navigation = [
     { name: 'Dashboard', key: 'dashboard', icon: Home },
-    { name: 'Send Money', key: 'send', icon: Send },
+    { name: 'Send', key: 'send', icon: Send },
     { name: 'Swap', key: 'swap', icon: ArrowLeftRight },
-    { name: 'Save & Earn', key: 'savings', icon: PiggyBank },
+    { name: 'Save', key: 'savings', icon: PiggyBank },
     //{ name: 'Family Pay', key: 'family', icon: Users },
    // { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
-    { name: 'Token Suite', key: 'faucet', icon: Droplets },
+    { name: 'Suite', key: 'faucet', icon: Droplets },
      { name: 'Buy/Sell', key: 'Buy/Sell', icon: DollarSignIcon  },
       { name: 'Admin', key: 'admin', icon: Shield },
       { name: 'Utility Payment', key: 'utility', icon: Zap },
@@ -94,9 +95,12 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
               <div className="w-8 h-8 bg-gradient-to-br from-terracotta to-sage rounded-lg flex items-center justify-center shadow-sm">
                 <span className="text-white font-bold text-sm">A</span>
               </div>
+              <Link to ="/">
               <span className="font-bold text-2xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
                 AfriRemit
               </span>
+              </Link>
+              
             </div>
             
             {/* Desktop Navigation - Centered */}
