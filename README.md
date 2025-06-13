@@ -311,7 +311,7 @@ npm start
 
 ## 🛣️ Roadmap & Future Development
 
-# AfriSwap Feasible Development Roadmap
+
 
 ## Phase 1: Core Platform Stabilization (Q2-Q3 2025)
 
