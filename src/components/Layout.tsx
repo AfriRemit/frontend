@@ -59,10 +59,10 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     { name: 'Save', key: 'savings', icon: PiggyBank },
     //{ name: 'Family Pay', key: 'family', icon: Users },
    // { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
-    { name: 'Suite', key: 'faucet', icon: Droplets },
+    { name: 'Faucet', key: 'faucet', icon: Droplets },
      { name: 'Buy/Sell', key: 'Buy/Sell', icon: DollarSignIcon  },
       { name: 'Admin', key: 'admin', icon: Shield },
-      { name: 'Utility Payment', key: 'utility', icon: Zap },
+      { name: 'UtilityPay', key: 'utility', icon: Zap },
 
 
   ];
@@ -85,7 +85,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 max-w-7xl mx-auto">
       {/* Top Navbar */}
       <div className="bg-white border-b border-stone-200 h-16 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between h-full px-4 lg:px-8 max-w-7xl mx-auto">
@@ -95,7 +95,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
               <div className="w-8 h-8 bg-gradient-to-br from-terracotta to-sage rounded-lg flex items-center justify-center shadow-sm">
                 <span className="text-white font-bold text-sm">A</span>
               </div>
-              <Link to ="/">
+              <Link to="/" onClick={() => onPageChange('dashboard')}>
               <span className="font-bold text-2xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
                 AfriRemit
               </span>
@@ -117,8 +117,8 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                         : 'text-stone-700 hover:bg-stone-100 hover:text-terracotta'
                     )}
                   >
-                    <item.icon className="w-4 h-4" />
-                    <span className="hidden xl:inline">{item.name}</span>
+                   <item.icon className="w-4 h-4" />
+                    <span>{item.name}</span>
                   </button>
                 ))}
               </div>
@@ -181,7 +181,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
             {/* Settings */}
             <button
               onClick={() => onPageChange('profile')}
-              className="p-2 rounded-lg hover:bg-stone-100 transition-colors"
+              className="p-2 rounded-lg mr-4 hover:bg-stone-100 transition-colors"
             >
               <Settings className="w-5 h-5 text-stone-700" />
             </button>
@@ -294,7 +294,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                 </button>
                 
                 {/* Mobile Thirdweb Connect Button */}
-                <div className="pt-4 border-t border-stone-200">
+                <div className="pt-4  border-t border-stone-200">
                   <ConnectButton 
                     client={client}
                   

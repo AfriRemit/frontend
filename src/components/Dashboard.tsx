@@ -6,6 +6,7 @@ import Currencies from '@/lib/Tokens/currencies';
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
 import { shortenAddress } from '@/lib/utils';
 import { roundToFiveDecimalPlaces, roundToTwoDecimalPlaces} from '@/lib/utils.ts';
+import { padBytes } from 'viem';
 
 interface DashboardProps {
   onPageChange?: (page: string) => void;
@@ -205,33 +206,33 @@ const fetchBalances = async () => {
   const portfolioGrowth = 5.6;
 
   const recentTransactions = [
-    {
-      id: 1,
-      type: 'send',
-      amount: -100,
-      currency: 'AFRC',
-      recipient: 'John Doe',
-      date: '2 hours ago',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      type: 'swap',
-      amount: 250,
-      currency: 'AFRC',
-      recipient: 'ETH → AFRC',
-      date: '1 day ago',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      type: 'save',
-      amount: 500,
-      currency: 'AFRC',
-      recipient: '365-day Savings',
-      date: '3 days ago',
-      status: 'earning'
-    }
+    // {
+    //   id: 1,
+    //   type: 'send',
+    //   amount: -100,
+    //   currency: 'AFRC',
+    //   recipient: 'John Doe',
+    //   date: '2 hours ago',
+    //   status: 'completed'
+    // },
+    // {
+    //   id: 2,
+    //   type: 'swap',
+    //   amount: 250,
+    //   currency: 'AFRC',
+    //   recipient: 'ETH → AFRC',
+    //   date: '1 day ago',
+    //   status: 'completed'
+    // },
+    // {
+    //   id: 3,
+    //   type: 'save',
+    //   amount: 500,
+    //   currency: 'AFRC',
+    //   recipient: '365-day Savings',
+    //   date: '3 days ago',
+    //   status: 'earning'
+    // }
   ];
 
   const copyAddress = () => {
@@ -330,7 +331,7 @@ const fetchBalances = async () => {
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
           {[
             { key: 'send', title: 'Send', subtitle: 'Transfer money', icon: ArrowUpRight, color: 'terracotta' },
             //{ key: 'deposit', title: 'Receive', subtitle: 'Deposit funds', icon: ArrowDownLeft, color: 'sage' },
@@ -338,6 +339,8 @@ const fetchBalances = async () => {
             {  key: 'Buy/Sell', title: 'Buy/Sell',subtitle: 'Onramp/Offramp', icon: DollarSignIcon, color: 'purple-600'  },
             
             { key: 'savings', title: 'Save', subtitle: 'Traditional rotating savings', icon: PiggyBank, color: 'emerald-600' },
+            { key: 'utility', title: 'Utility Payment', subtitle: 'Pay for utilities and services using stablecoins', icon:Gift, color: 'emerald-600' },
+
             //{ key: 'family', title: 'Family', subtitle: 'Auto-send', icon: Users, color: 'purple-600' },
             //{ key: 'referral', title: 'Invite', subtitle: 'Earn rewards', icon: Gift, color: 'pink-600' },
             //{ key: 'withdraw', title: 'Cash Out', subtitle: 'To bank', icon: ArrowDownLeft, color: 'red-600' }
@@ -388,7 +391,7 @@ const fetchBalances = async () => {
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-stone-200">
           <h3 className="text-lg font-semibold text-stone-800 mb-6">Recent Transactions</h3>
           <div className="space-y-4">
-            {recentTransactions.map((tx) => (
+            {/* {recentTransactions.map((tx) => (
               <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-stone-50 rounded-xl transition-colors">
                 <div className="flex items-center space-x-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -420,7 +423,7 @@ const fetchBalances = async () => {
                   </p>
                 </div>
               </div>
-            ))}
+            ))} */}
           </div>
         </div>
       </div>
