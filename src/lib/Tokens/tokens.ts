@@ -30,8 +30,8 @@ const tokens: Token[] = [
     balance: 2,
     
      address: '0x88a4e1125FF42e0010192544EAABd78Db393406e', // Replace with actual USDC contract address
-    pool: [],
-    poolId: [],
+    pool: ["ETH","AFX"],
+    poolId: [2,6],
     img:'https://coin-images.coingecko.com/coins/images/39963/large/usdt.png?1724952731'
   },
    { 
@@ -52,8 +52,8 @@ const tokens: Token[] = [
     name: 'AfriRemit', 
     balance: 1250,
     address: '0x207d9E20755fEe1924c79971A3e2d550CE6Ff2CB', // Replace with actual AfriCoin contract address
-    pool: [],
-    poolId: [],
+    pool: ["ETH"],
+    poolId: [1],
     img: 'https://cdn.moralis.io/eth/0x6b3595068778dd592e39a122f4f5a5cf09c90fe2.png',
         
   },
@@ -86,8 +86,8 @@ const tokens: Token[] = [
     name: 'Crypto South African Rand', 
     balance: 1250,
     address: '0x1255C3745a045f653E5363dB6037A2f854f58FBf', // Replace with actual AfriCoin contract address
-    pool: [],
-    poolId: [],
+    pool: ["cNGN","AFX"],
+    poolId: [3,5],
     img: 'https://www.xe.com/svgs/flags/zar.static.svg',
         
   },
@@ -109,8 +109,8 @@ const tokens: Token[] = [
     name: '	Crypto Kenyan Shilling', 
     balance: 1250,
     address: '0x291ca1891b41a25c161fDCAE06350E6a524068d5', // Replace with actual AfriCoin contract address
-    pool: [],
-    poolId: [],
+    pool: ["cGHS"],
+    poolId: [4],
     img: 'https://www.xe.com/svgs/flags/kes.static.svg',
         
   },

@@ -38,7 +38,7 @@ const FaucetComponent = () => {
     };
 
     fetchData();
-  }, [isConnected, fromToken, Bal1, token1Address, token2Address, fetchBalance]);
+  }, [isConnected, fromToken, Bal1, token1Address, token2Address, fetchBalance,isFaucet]);
 
   const getFaucet = async () => {
     try {

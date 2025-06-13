@@ -295,7 +295,7 @@ const fetchAllPoolsData = async () => {
       clearInterval(intervalId);
     }
   };
-}, [SWAP_CONTRACT_INSTANCE, isConnected, address, tokens]);
+}, [SWAP_CONTRACT_INSTANCE, isConnected, address, tokens, isAddLiquid, isRemoveLiquid,token1, token2]);
 useEffect(() => {
   let intervalId;
   
@@ -1099,29 +1099,34 @@ const setMaxAmount1 = () => {
     </div>
   )}
 
+
+{/* Add Liquidity Button 
   {/* Real Pool Balances Info */}
-  {isConnected && poolBal1 !== null && poolBal2 !== null && (
-    <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-      <div className="flex items-center space-x-2 mb-2">
-        <Info className="w-4 h-4 text-green-600" />
-        <span className="text-green-800 font-medium text-sm">Current Pool Liquidity</span>
+  {/* 
+{isConnected && poolBal1 !== null && poolBal2 !== null && (
+  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+    <div className="flex items-center space-x-2 mb-2">
+      <Info className="w-4 h-4 text-green-600" />
+      <span className="text-green-800 font-medium text-sm">Current Pool Liquidity</span>
+    </div>
+    <div className="space-y-1 text-sm">
+      <div className="flex justify-between">
+        <span className="text-green-700">{token1} in Pool:</span>
+        <span className="font-medium text-green-800">{poolBal1?.toFixed(6) || '0'}</span>
       </div>
-      <div className="space-y-1 text-sm">
-        <div className="flex justify-between">
-          <span className="text-green-700">{token1} in Pool:</span>
-          <span className="font-medium text-green-800">{poolBal1?.toFixed(6) || '0'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-green-700">{token2} in Pool:</span>
-          <span className="font-medium text-green-800">{poolBal2?.toFixed(6) || '0'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-green-700">Total Pool Value:</span>
-          <span className="font-medium text-green-800">{((poolBal1 || 0) + (poolBal2 || 0)).toFixed(6)}</span>
-        </div>
+      <div className="flex justify-between">
+        <span className="text-green-700">{token2} in Pool:</span>
+        <span className="font-medium text-green-800">{poolBal2?.toFixed(6) || '0'}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-green-700">Total Pool Value:</span>
+        <span className="font-medium text-green-800">{((poolBal1 || 0) + (poolBal2 || 0)).toFixed(6)}</span>
       </div>
     </div>
-  )}
+  </div>
+)}
+*/}
+
 
   {/* Available Pools Info */}
   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">

@@ -92,25 +92,45 @@ const [poolPrices, setPoolPrices] = useState<{ [key: string]: string }>({});
 }, []);
 
 // Filter tokens to exclude selected token from opposite dropdown
-const getAvailableTokens = (excludeToken) => {
-  return tokens.filter(token => token.symbol !== excludeToken);
+const getAvailableTokens = (selectedToken, isFromToken = true) => {
+  if (isFromToken) {
+    // For "From" token dropdown, show all tokens
+    return tokens.filter(token => token.symbol !== selectedToken);
+  } else {
+    // For "To" token dropdown, show only tokens that have liquidity pools with the selected "From" token
+    const fromTokenData = tokens.find(token => token.symbol === selectedToken);
+    
+    if (!fromTokenData || !fromTokenData.pool || fromTokenData.pool.length === 0) {
+      // If the from token has no pools, return empty array or show a message
+      return [];
+    }
+    
+    // Return tokens that are in the pool array of the selected from token
+    return tokens.filter(token => 
+      fromTokenData.pool.includes(token.symbol)
+    );
+  }
 };
 
 // Handle token selection with automatic switching
 const handleFromTokenChange = (newFromToken) => {
   setFromToken(newFromToken);
-  // If the new from token is the same as to token, swap them
-  if (newFromToken === toToken) {
-    setToToken(fromToken);
+  
+  // Get available tokens for the new from token
+  const availableToTokens = getAvailableTokens(newFromToken, false);
+  
+  // If current toToken is not available for the new fromToken, reset to first available or empty
+  if (availableToTokens.length > 0 && !availableToTokens.some(token => token.symbol === toToken)) {
+    setToToken(availableToTokens[0].symbol);
+  } else if (availableToTokens.length === 0) {
+    setToToken(''); // or set to a default value
   }
 };
 
+
 const handleToTokenChange = (newToToken) => {
   setToToken(newToToken);
-  // If the new to token is the same as from token, swap them
-  if (newToToken === fromToken) {
-    setFromToken(toToken);
-  }
+  // No need to change fromToken as it can be any token
 };
 
   
@@ -543,17 +563,17 @@ useEffect(()=>{
           />
         )}
 
-        <select
-          value={fromToken}
-          onChange={(e) => handleFromTokenChange(e.target.value)}
-          className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
-        >
-          {getAvailableTokens(toToken).map(token => (
-            <option key={token.symbol} value={token.symbol}>
-              {token.symbol}
-            </option>
-          ))}
-        </select>
+      <select
+  value={fromToken}
+  onChange={(e) => handleFromTokenChange(e.target.value)}
+  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
+>
+  {getAvailableTokens(toToken, true).map(token => (
+    <option key={token.symbol} value={token.symbol}>
+      {token.symbol}
+    </option>
+  ))}
+</select>
       </div>
     </div>
 
@@ -610,16 +630,21 @@ useEffect(()=>{
         )}
 
         <select
-          value={toToken}
-          onChange={(e) => handleToTokenChange(e.target.value)}
-          className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
-        >
-          {getAvailableTokens(fromToken).map(token => (
-            <option key={token.symbol} value={token.symbol}>
-              {token.symbol}
-            </option>
-          ))}
-        </select>
+  value={toToken}
+  onChange={(e) => handleToTokenChange(e.target.value)}
+  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
+  disabled={getAvailableTokens(fromToken, false).length === 0}
+>
+  {getAvailableTokens(fromToken, false).length === 0 ? (
+    <option value="">No liquidity pools available</option>
+  ) : (
+    getAvailableTokens(fromToken, false).map(token => (
+      <option key={token.symbol} value={token.symbol}>
+        {token.symbol}
+      </option>
+    ))
+  )}
+</select>
       </div>
     </div>
   </div>
@@ -648,7 +673,7 @@ useEffect(()=>{
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-600">Network Fee</span>
-                <span className="font-medium">~$2.50</span>
+                <span className="font-medium">~$0.001</span>
               </div>
               {isConnected &&   <>
               <div className="flex justify-between">

@@ -208,47 +208,40 @@ const initializeData = async () => {
 
  
 
-  const handleCreateGroup = async () => {
-    if (!groupName || !contributionAmount || !selectedToken || parseFloat(contributionAmount) <= 0) return;
-    
-    setIsProcessing(true);
-    try {
-      const Saving_Contract = await SAVING_CONTRACT_INSTANCE();
-      const freqData = frequencyOptions.find(f => f.value === frequency);
-      const contributionInWei = toWei(contributionAmount);
-      
-      const tx = await Saving_Contract.createGroup(
-        groupName,
-        groupDescription || `${groupName} - A savings group`,
-        selectedToken,
-        contributionInWei,
-        freqData.seconds,
-        groupSize
-      );
-      
-      const receipt = await tx.wait();
-      
-      // Extract group ID from events
-      const groupCreatedEvent = receipt.events?.find(e => e.event === 'GroupCreated');
-      const groupId = groupCreatedEvent?.args?.groupId;
-      
-      if (groupId) {
-        // Generate invite code
-        const inviteCodeTx = await Saving_Contract.generateInviteCode(groupId, 10, 7);
-        await inviteCodeTx.wait();
-        
-        setSuccessMessage(`Successfully created "${groupName}" group! Share the invite code with members.`);
-        setGroupName('');
-        setGroupDescription('');
-        setContributionAmount('');
-        initializeData(); // Refresh data
-      }
-    } catch (error) {
-      console.error('Group creation error:', error);
-      setErrorMessage('Failed to create group');
-    }
-    setIsProcessing(false);
-  };
+ const handleCreateGroup = async () => {
+  if (!groupName || !contributionAmount || !selectedToken || parseFloat(contributionAmount) <= 0) return;
+
+  setIsProcessing(true);
+  try {
+    const Saving_Contract = await SAVING_CONTRACT_INSTANCE();
+    const freqData = frequencyOptions.find(f => f.value === frequency);
+    const contributionInWei = toWei(contributionAmount);
+
+    const tx = await Saving_Contract.createGroup(
+      groupName,
+      groupDescription || `${groupName} - A savings group`,
+      selectedToken,
+      contributionInWei,
+      freqData.seconds,
+      groupSize
+    );
+
+    await tx.wait();
+
+    setSuccessMessage(`Successfully created "${groupName}" group!`);
+    setGroupName('');
+    setGroupDescription('');
+    setContributionAmount('');
+    initializeData(); // Refresh data
+
+  } catch (error) {
+    console.error('Group creation error:', error);
+    setErrorMessage('Failed to create group');
+  }
+
+  setIsProcessing(false);
+};
+
 
   const handleJoinGroup = async (groupId) => {
     setIsProcessing(true);
