@@ -85,7 +85,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 max-w-7xl mx-auto">
       {/* Top Navbar */}
       <div className="bg-white border-b border-stone-200 h-16 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between h-full px-4 lg:px-8 max-w-7xl mx-auto">
