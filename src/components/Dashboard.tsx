@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, ArrowUpRight, ArrowDownLeft,DollarSignIcon, Copy, Eye, EyeOff, ArrowLeftRight, PiggyBank, Users, Gift } from 'lucide-react';
+import { TrendingUp, ArrowUpRight, ArrowDownLeft, DollarSignIcon, Copy, Eye, EyeOff, ArrowLeftRight, PiggyBank, Users, Gift, Wallet, AlertCircle } from 'lucide-react';
 import { formatEther } from 'ethers';
 
 import Currencies from '@/lib/Tokens/currencies';
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
 import { shortenAddress } from '@/lib/utils';
 import { roundToFiveDecimalPlaces, roundToTwoDecimalPlaces} from '@/lib/utils.ts';
-import { padBytes } from 'viem';
 
 interface DashboardProps {
   onPageChange?: (page: string) => void;
@@ -34,7 +33,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
   const getLatestTokenPrice = async (tokenAddress: string): Promise<number> => {
     try {
       if (!PRICEAPI_CONTRACT_INSTANCE) {
-        console.log('Price feed contract not available');
         return 0;
       }
 
@@ -42,7 +40,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
       const priceInWei = await contract.getLatestPrice(tokenAddress);
       const price = parseFloat(formatEther(priceInWei));
       
-      console.log(`Latest price for token ${tokenAddress}: ${price}`);
       return price;
     } catch (error) {
       console.error('Error getting latest token price:', error);
@@ -56,7 +53,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
       const latestPrice = await getLatestTokenPrice(tokenAddress);
       const usdValue = amount * latestPrice;
       
-      console.log(`Token amount: ${amount}, Latest price: ${latestPrice}, USD value: ${usdValue.toFixed(2)}`);
       return usdValue;
     } catch (error) {
       console.error('Error calculating USD value:', error);
@@ -133,42 +129,42 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
   };
 
   useEffect(() => {
-    // Replace this section in your fetchBalances function:
+    const fetchBalances = async () => {
+      if (!token1Address || !isConnected) {
+        // Reset values when not connected
+        setBal1(0);
+        setUsdValue(0);
+        setCurrentTokenPrice(0);
+        return;
+      }
 
-const fetchBalances = async () => {
-  if (!token1Address || !isConnected) return;
+      try {
+        const bal = await fetchBalance(token1Address);
+        
+        const numericBal = Number(bal);
+        const roundedBal = isNaN(numericBal) || numericBal < 0 ? 0 : roundToTwoDecimalPlaces(numericBal);
+        
+        setBal1(roundedBal);
 
-  try {
-    const bal = await fetchBalance(token1Address);
-    
-    // Add this validation before processing the balance
-    const numericBal = Number(bal);
-    const roundedBal = isNaN(numericBal) || numericBal < 0 ? 0 : roundToTwoDecimalPlaces(numericBal);
-    
-    setBal1(roundedBal);
-
-    // Get latest USD value for the balance using contract price
-    if (roundedBal > 0) {
-      const usdVal = await calculateUSDValue(token1Address, roundedBal);
-      console.log(`Balance: ${roundedBal}, USD Value: ${usdVal}`);
-      setUsdValue(roundToTwoDecimalPlaces(usdVal));
-      
-      // Store the current token price
-      const price = await getLatestTokenPrice(token1Address);
-      setCurrentTokenPrice(price);
-    } else {
-      // Set default values when balance is 0 or invalid
-      setUsdValue(0);
-      setCurrentTokenPrice(0);
-    }
-  } catch (err) {
-    console.error('Error fetching balance:', err);
-    // Set default values on error
-    setBal1(0);
-    setUsdValue(0);
-    setCurrentTokenPrice(0);
-  }
-};
+        // Get latest USD value for the balance using contract price
+        if (roundedBal > 0) {
+          const usdVal = await calculateUSDValue(token1Address, roundedBal);
+          setUsdValue(roundToTwoDecimalPlaces(usdVal));
+          
+          // Store the current token price
+          const price = await getLatestTokenPrice(token1Address);
+          setCurrentTokenPrice(price);
+        } else {
+          setUsdValue(0);
+          setCurrentTokenPrice(0);
+        }
+      } catch (err) {
+        console.error('Error fetching balance:', err);
+        setBal1(0);
+        setUsdValue(0);
+        setCurrentTokenPrice(0);
+      }
+    };
 
     fetchBalances();
   }, [token1Address, isConnected, PRICEAPI_CONTRACT_INSTANCE]);
@@ -180,65 +176,31 @@ const fetchBalances = async () => {
     
     const interval = setInterval(updateLiveExchangeRates, 5000);
     return () => clearInterval(interval);
-  }, [selectedCurrency, PRICEAPI_CONTRACT_INSTANCE]); // Added PRICEAPI_CONTRACT_INSTANCE as dependency
+  }, [selectedCurrency, PRICEAPI_CONTRACT_INSTANCE]);
 
   // Update USD value when selected currency changes
   useEffect(() => {
     const updateUSDValue = async () => {
-      if (bal1 && token1Address && bal1 > 0) {
+      if (bal1 && token1Address && bal1 > 0 && isConnected) {
         const usdVal = await calculateUSDValue(token1Address, bal1);
         setUsdValue(roundToTwoDecimalPlaces(usdVal));
         
         const price = await getLatestTokenPrice(token1Address);
-        console.log(`Updated price for ${selectedToken?.symbol}: ${price}`);
         setCurrentTokenPrice(price);
       }
     };
 
     updateUSDValue();
-  }, [selectedCurrency, bal1, token1Address]);
-
-  // ⛔ Do not render if not connected
-  if (!isConnected) {
-    return null;
-  }
+  }, [selectedCurrency, bal1, token1Address, isConnected]);
 
   const portfolioGrowth = 5.6;
 
-  const recentTransactions = [
-    // {
-    //   id: 1,
-    //   type: 'send',
-    //   amount: -100,
-    //   currency: 'AFRC',
-    //   recipient: 'John Doe',
-    //   date: '2 hours ago',
-    //   status: 'completed'
-    // },
-    // {
-    //   id: 2,
-    //   type: 'swap',
-    //   amount: 250,
-    //   currency: 'AFRC',
-    //   recipient: 'ETH → AFRC',
-    //   date: '1 day ago',
-    //   status: 'completed'
-    // },
-    // {
-    //   id: 3,
-    //   type: 'save',
-    //   amount: 500,
-    //   currency: 'AFRC',
-    //   recipient: '365-day Savings',
-    //   date: '3 days ago',
-    //   status: 'earning'
-    // }
-  ];
-
   const copyAddress = () => {
-    navigator.clipboard.writeText(fullAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (fullAddress) {
+      navigator.clipboard.writeText(fullAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleQuickAction = (action: string) => {
@@ -247,19 +209,119 @@ const fetchBalances = async () => {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(walletAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  // Wallet Not Connected Component
+  const WalletNotConnected = () => (
+    <div className="min-h-screen bg-stone-50">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 space-y-8">
+        {/* Welcome Message */}
+        <div className="bg-gradient-to-br from-terracotta/10 to-sage/10 rounded-2xl p-8 shadow-sm border border-stone-200 text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-terracotta to-sage rounded-full flex items-center justify-center mx-auto mb-6">
+            <Wallet className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-stone-800 mb-4">Welcome to AfriRemit</h2>
+          <p className="text-stone-600 text-lg mb-6 max-w-2xl mx-auto">
+            Connect your wallet to start sending money, swapping currencies, and managing your digital assets across Africa.
+          </p>
+          <div className="flex items-center justify-center space-x-2 text-sm text-stone-500">
+            <AlertCircle className="w-4 h-4" />
+            <span>Please connect your wallet using the button in the top navigation</span>
+          </div>
+        </div>
 
-  const handleReceiveClick = () => {
-    if (onPageChange) {
-      onPageChange('deposit');
-    }
-  };
+        {/* Features Preview */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+          {[
+            { key: 'send', title: 'Send', subtitle: 'Transfer money', icon: ArrowUpRight, color: 'terracotta' },
+            { key: 'swap', title: 'Swap', subtitle: 'Exchange', icon: ArrowLeftRight, color: 'gold' },
+            { key: 'Buy/Sell', title: 'Buy/Sell', subtitle: 'Onramp/Offramp', icon: DollarSignIcon, color: 'purple-600' },
+            { key: 'savings', title: 'Save', subtitle: 'Traditional rotating savings', icon: PiggyBank, color: 'emerald-600' },
+            { key: 'utility', title: 'Utility Payment', subtitle: 'Pay for utilities and services', icon: Gift, color: 'emerald-600' },
+          ].map((action) => (
+            <div 
+              key={action.key}
+              className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 opacity-75 cursor-not-allowed"
+            >
+              <div className={`w-12 h-12 bg-stone-200 rounded-full flex items-center justify-center mb-4`}>
+                <action.icon className="w-6 h-6 text-stone-400" />
+              </div>
+              <h3 className="font-semibold text-stone-500 mb-1">{action.title}</h3>
+              <p className="text-stone-400 text-sm">{action.subtitle}</p>
+            </div>
+          ))}
+        </div>
 
-  return (
+        {/* Live Exchange Rates - Always Show */}
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-stone-200">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-stone-800">Live Exchange Rates</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-stone-500">Live</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Object.entries(exchangeRates).length > 0 ? (
+              Object.entries(exchangeRates).map(([currency, data], index) => (
+                <div key={index} className="bg-stone-50 rounded-xl p-6 transition-all duration-300 hover:shadow-md">
+                  <p className="text-sm text-stone-600 mb-2">{currency}</p>
+                  <p className="text-xl font-bold text-stone-800 mb-1">${data.rate.toFixed(6)}</p>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm font-medium transition-colors duration-300 ${
+                      data.positive === true ? 'text-green-600' : 
+                      data.positive === false ? 'text-red-600' : 'text-stone-600'
+                    }`}>
+                      {data.positive === true ? '+' : data.positive === false ? '' : ''}{data.change.toFixed(2)}%
+                    </p>
+                    <p className="text-xs text-stone-500">5s</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              // Loading state for exchange rates
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="bg-stone-50 rounded-xl p-6 animate-pulse">
+                  <div className="h-4 bg-stone-200 rounded mb-2"></div>
+                  <div className="h-6 bg-stone-200 rounded mb-1"></div>
+                  <div className="h-4 bg-stone-200 rounded w-1/2"></div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Getting Started */}
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-stone-200">
+          <h3 className="text-lg font-semibold text-stone-800 mb-6">Getting Started</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-terracotta/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-terracotta font-bold">1</span>
+              </div>
+              <h4 className="font-semibold text-stone-800 mb-2">Connect Wallet</h4>
+              <p className="text-stone-600 text-sm">Use the "Connect Wallet" button to link your digital wallet</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-sage/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-sage font-bold">2</span>
+              </div>
+              <h4 className="font-semibold text-stone-800 mb-2">Add Funds</h4>
+              <p className="text-stone-600 text-sm">Buy stablecoins or transfer from another wallet</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-gold font-bold">3</span>
+              </div>
+              <h4 className="font-semibold text-stone-800 mb-2">Start Transacting</h4>
+              <p className="text-stone-600 text-sm">Send money, swap currencies, and save with AfriRemit</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Connected Wallet Dashboard
+  const ConnectedDashboard = () => (
     <div className="min-h-screen bg-stone-50">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 space-y-8">
         {/* Wallet Overview */}
@@ -334,16 +396,10 @@ const fetchBalances = async () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
           {[
             { key: 'send', title: 'Send', subtitle: 'Transfer money', icon: ArrowUpRight, color: 'terracotta' },
-            //{ key: 'deposit', title: 'Receive', subtitle: 'Deposit funds', icon: ArrowDownLeft, color: 'sage' },
             { key: 'swap', title: 'Swap', subtitle: 'Exchange', icon: ArrowLeftRight, color: 'gold' },
-            {  key: 'Buy/Sell', title: 'Buy/Sell',subtitle: 'Onramp/Offramp', icon: DollarSignIcon, color: 'purple-600'  },
-            
+            { key: 'Buy/Sell', title: 'Buy/Sell', subtitle: 'Onramp/Offramp', icon: DollarSignIcon, color: 'purple-600' },
             { key: 'savings', title: 'Save', subtitle: 'Traditional rotating savings', icon: PiggyBank, color: 'emerald-600' },
-            { key: 'utility', title: 'Utility Payment', subtitle: 'Pay for utilities and services using stablecoins', icon:Gift, color: 'emerald-600' },
-
-            //{ key: 'family', title: 'Family', subtitle: 'Auto-send', icon: Users, color: 'purple-600' },
-            //{ key: 'referral', title: 'Invite', subtitle: 'Earn rewards', icon: Gift, color: 'pink-600' },
-            //{ key: 'withdraw', title: 'Cash Out', subtitle: 'To bank', icon: ArrowDownLeft, color: 'red-600' }
+            { key: 'utility', title: 'Utility Payment', subtitle: 'Pay for utilities and services using stablecoins', icon: Gift, color: 'emerald-600' },
           ].map((action) => (
             <button 
               key={action.key}
@@ -390,45 +446,16 @@ const fetchBalances = async () => {
         {/* Recent Transactions */}
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-stone-200">
           <h3 className="text-lg font-semibold text-stone-800 mb-6">Recent Transactions</h3>
-          <div className="space-y-4">
-            {/* {recentTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-stone-50 rounded-xl transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    tx.type === 'send' ? 'bg-red-100' : 
-                    tx.type === 'swap' ? 'bg-blue-100' : 'bg-green-100'
-                  }`}>
-                    {tx.type === 'send' ? (
-                      <ArrowUpRight className="w-5 h-5 text-red-600" />
-                    ) : tx.type === 'swap' ? (
-                      <ArrowLeftRight className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <PiggyBank className="w-5 h-5 text-green-600" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-stone-800">{tx.recipient}</p>
-                    <p className="text-stone-500 text-sm">{tx.date}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${tx.amount > 0 ? 'text-green-600' : 'text-stone-800'}`}>
-                    {tx.amount > 0 ? '+' : ''}{tx.amount} {tx.currency}
-                  </p>
-                  <p className={`text-xs px-2 py-1 rounded-full ${
-                    tx.status === 'completed' ? 'bg-green-100 text-green-700' : 
-                    tx.status === 'earning' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {tx.status}
-                  </p>
-                </div>
-              </div>
-            ))} */}
+          <div className="text-center py-8">
+            <p className="text-stone-500">No transactions yet. Start by making your first transaction!</p>
           </div>
         </div>
       </div>
     </div>
   );
+
+  // Render based on connection status
+  return isConnected ? <ConnectedDashboard /> : <WalletNotConnected />;
 };
 
 export default Dashboard;

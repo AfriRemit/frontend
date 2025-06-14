@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { createThirdwebClient } from 'thirdweb';
 import { ConnectButton } from 'thirdweb/react';
-// Update the import to match the correct export name from thirdweb/chains
 
 import {
   Shield,
@@ -22,7 +21,9 @@ import {
   Home,
   LogOut,
   Zap,
-  AlertTriangle
+  AlertTriangle,
+  MoreHorizontal,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
@@ -37,6 +38,7 @@ interface LayoutProps {
 const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   
   const { 
     isConnected, 
@@ -51,21 +53,24 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID
   });
 
-  // Complete navigation list with all pages
-  const navigation = [
+  // Primary navigation items (always visible on desktop)
+  const primaryNavigation = [
     { name: 'Dashboard', key: 'dashboard', icon: Home },
     { name: 'Send', key: 'send', icon: Send },
     { name: 'Swap', key: 'swap', icon: ArrowLeftRight },
     { name: 'Save', key: 'savings', icon: PiggyBank },
-    //{ name: 'Family Pay', key: 'family', icon: Users },
-   // { name: 'Cash Out', key: 'withdraw', icon: ArrowDownLeft },
-    { name: 'Faucet', key: 'faucet', icon: Droplets },
-     { name: 'Buy/Sell', key: 'Buy/Sell', icon: DollarSignIcon  },
-      { name: 'Admin', key: 'admin', icon: Shield },
-      { name: 'UtilityPay', key: 'utility', icon: Zap },
-
-
+    { name: 'Buy/Sell', key: 'Buy/Sell', icon: DollarSignIcon },
   ];
+
+  // Secondary navigation items (in "More" dropdown on desktop, full list on mobile)
+  const secondaryNavigation = [
+    { name: 'Faucet', key: 'faucet', icon: Droplets },
+    { name: 'Utility Pay', key: 'utility', icon: Zap },
+    { name: 'Admin', key: 'admin', icon: Shield },
+  ];
+
+  // All navigation items for mobile
+  const allNavigation = [...primaryNavigation, ...secondaryNavigation];
 
   const notifications = [
     { id: 1, title: 'Transfer Completed', message: 'Your transfer to John Doe has been completed successfully.', time: '2 hours ago', unread: true },
@@ -84,48 +89,90 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     setShowNotifications(!showNotifications);
   };
 
+  const isCurrentPageInSecondary = secondaryNavigation.some(item => item.key === currentPage);
+
   return (
     <div className="min-h-screen bg-stone-50 max-w-7xl mx-auto">
       {/* Top Navbar */}
       <div className="bg-white border-b border-stone-200 h-16 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between h-full px-4 lg:px-8 max-w-7xl mx-auto">
           {/* Logo */}
-          <div className="flex items-center space-x-8">
+          <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-terracotta to-sage rounded-lg flex items-center justify-center shadow-sm">
                 <span className="text-white font-bold text-sm">A</span>
               </div>
               <Link to="/" onClick={() => onPageChange('dashboard')}>
-              <span className="font-bold text-2xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
-                AfriRemit
-              </span>
+                <span className="font-bold text-xl xl:text-2xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
+                  AfriRemit
+                </span>
               </Link>
-              
             </div>
-            
-            {/* Desktop Navigation - Centered */}
-            <nav className="hidden lg:flex items-center justify-center flex-1 max-w-4xl mx-auto">
-              <div className="flex items-center space-x-1">
-                {navigation.map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => onPageChange(item.key)}
-                    className={cn(
-                      'flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium',
-                      currentPage === item.key
-                        ? 'bg-terracotta text-white shadow-sm'
-                        : 'text-stone-700 hover:bg-stone-100 hover:text-terracotta'
-                    )}
-                  >
-                   <item.icon className="w-4 h-4" />
-                    <span>{item.name}</span>
-                  </button>
-                ))}
-              </div>
-            </nav>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Desktop Navigation - Optimized */}
+          <nav className="hidden lg:flex items-center space-x-1">
+            {/* Primary Navigation Items */}
+            {primaryNavigation.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => onPageChange(item.key)}
+                className={cn(
+                  'flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium whitespace-nowrap',
+                  currentPage === item.key
+                    ? 'bg-terracotta text-white shadow-sm'
+                    : 'text-stone-700 hover:bg-stone-100 hover:text-terracotta'
+                )}
+              >
+                <item.icon className="w-4 h-4" />
+              
+              </button>
+            ))}
+
+            {/* More Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className={cn(
+                  'flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium',
+                  isCurrentPageInSecondary
+                    ? 'bg-terracotta text-white shadow-sm'
+                    : 'text-stone-700 hover:bg-stone-100 hover:text-terracotta'
+                )}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+                <span className="hidden lg:inline">More</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+
+              {/* More Dropdown Menu */}
+              {showMoreMenu && (
+                <div className="absolute z-50 top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                  {secondaryNavigation.map((item) => (
+                    <button
+                      key={item.key}
+                      onClick={() => {
+                        onPageChange(item.key);
+                         setShowMoreMenu(false); // Keep this line
+                        
+                      }}
+                      className={cn(
+                        'flex items-center space-x-3 w-full px-4 py-2 text-left text-sm transition-colors',
+                        currentPage === item.key
+                          ? 'bg-terracotta text-white'
+                          : 'text-stone-700 hover:bg-stone-50'
+                      )}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </nav>
+
+          {/* Right side - Mobile menu button */}
           <div className="lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -135,8 +182,8 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
             </button>
           </div>
 
-          {/* Right side icons */}
-          <div className="hidden lg:flex items-center space-x-4">
+          {/* Right side icons - Desktop */}
+          <div className="hidden lg:flex items-center space-x-2">
             {/* Notifications */}
             <div className="relative">
               <button 
@@ -181,32 +228,31 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
             {/* Settings */}
             <button
               onClick={() => onPageChange('profile')}
-              className="p-2 rounded-lg mr-4 hover:bg-stone-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-stone-100 transition-colors"
             >
               <Settings className="w-5 h-5 text-stone-700" />
             </button>
 
             {/* Thirdweb Connect Button */}
             <ConnectButton 
-            client={client}
-            
+              client={client}
               connectButton={{
-                label: "Connect Wallet",
-                className: "!bg-gradient-to-r !from-terracotta !to-sage !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 hover:!shadow-lg"
+                label: "Connect",
+                className: "!bg-gradient-to-r !from-terracotta !to-sage !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 hover:!shadow-lg !text-sm"
               }}
               detailsButton={{
-                className: "!bg-green-600 !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200",
+                className: "!bg-green-600 !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 !text-sm",
                 displayBalanceToken: {
-                  4202: "0x0000000000000000000000000000000000000000" // ETH on Lisk Sepolia
+                  4202: "0x0000000000000000000000000000000000000000"
                 }
               }}
               connectModal={{
                 title: "Connect to AfriRemit",
-                titleIcon: "https://your-logo-url.com/logo.png", // Optional: Add your logo
+                titleIcon: "https://your-logo-url.com/logo.png",
                 showThirdwebBranding: false,
               }}
               switchButton={{
-                label: "Switch to Lisk Sepolia"
+                label: "Switch Network"
               }}
             />
           </div>
@@ -236,68 +282,74 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
       <div className="lg:hidden">
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setSidebarOpen(false)}>
-            <div className="fixed inset-y-0 left-0 w-3/4 bg-white p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 bg-gradient-to-br from-terracotta to-sage rounded-lg flex items-center justify-center shadow-sm">
-                    <span className="text-white font-bold text-xs">A</span>
+            <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-col h-full">
+                {/* Mobile Header */}
+                <div className="flex items-center justify-between p-6 border-b border-stone-200">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-7 h-7 bg-gradient-to-br from-terracotta to-sage rounded-lg flex items-center justify-center shadow-sm">
+                      <span className="text-white font-bold text-xs">A</span>
+                    </div>
+                    <span className="font-bold text-xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
+                      AfriRemit
+                    </span>
                   </div>
-                  <span className="font-bold text-xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
-                    AfriRemit
-                  </span>
-                </div>
-                <button onClick={() => setSidebarOpen(false)}>
-                  <X className="w-6 h-6 text-stone-700" />
-                </button>
-              </div>
-              
-              {/* Mobile Navigation */}
-              <nav className="flex flex-col space-y-3">
-                {navigation.map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => {
-                      onPageChange(item.key);
-                      setSidebarOpen(false);
-                    }}
-                    className={cn(
-                      'flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors',
-                      currentPage === item.key
-                        ? 'bg-terracotta text-white'
-                        : 'text-stone-700 hover:bg-stone-100'
-                    )}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    <span>{item.name}</span>
+                  <button onClick={() => setSidebarOpen(false)}>
+                    <X className="w-6 h-6 text-stone-700" />
                   </button>
-                ))}
-              </nav>
-              
-              {/* Mobile additional options */}
-              <div className="mt-8 space-y-3">
-                <button 
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span>Notifications</span>
-                </button>
-                <button
-                  onClick={() => {
-                    onPageChange('profile');
-                    setSidebarOpen(false);
-                  }}
-                  className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
-                >
-                  <Settings className="w-5 h-5" />
-                  <span>Settings</span>
-                </button>
+                </div>
                 
-                {/* Mobile Thirdweb Connect Button */}
-                <div className="pt-4  border-t border-stone-200">
+                {/* Mobile Navigation */}
+                <div className="flex-1 overflow-y-auto py-4">
+                  <nav className="px-4 space-y-2">
+                    {allNavigation.map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => {
+                          onPageChange(item.key);
+                          setSidebarOpen(false);
+                        }}
+                        className={cn(
+                          'flex items-center space-x-3 w-full px-4 py-3 rounded-lg transition-colors text-left',
+                          currentPage === item.key
+                            ? 'bg-terracotta text-white'
+                            : 'text-stone-700 hover:bg-stone-100'
+                        )}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        <span>{item.name}</span>
+                      </button>
+                    ))}
+                  </nav>
+                  
+                  {/* Mobile additional options */}
+                  <div className="mt-6 px-4 space-y-2 border-t border-stone-200 pt-4">
+                    <button 
+                      onClick={() => setShowNotifications(!showNotifications)}
+                      className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
+                    >
+                      <Bell className="w-5 h-5" />
+                      <span>Notifications</span>
+                      <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        onPageChange('profile');
+                        setSidebarOpen(false);
+                      }}
+                      className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
+                    >
+                      <Settings className="w-5 h-5" />
+                      <span>Settings</span>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Mobile Footer */}
+                <div className="p-4 border-t border-stone-200">
+                  {/* Mobile Thirdweb Connect Button */}
                   <ConnectButton 
                     client={client}
-                  
                     connectButton={{
                       label: "Connect Wallet",
                       className: "!w-full !bg-gradient-to-r !from-terracotta !to-sage !text-white !font-medium !px-4 !py-3 !rounded-lg"
@@ -316,28 +368,28 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                       label: "Switch to Lisk Sepolia"
                     }}
                   />
-                </div>
-                
-                {/* Connection Status Indicator */}
-                {isConnected && (
-                  <div className="px-4 py-2 bg-green-50 rounded-lg border border-green-200">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-800">Wallet Connected</span>
-                    </div>
-                    {address && (
-                      <p className="text-xs text-green-600 mt-1 font-mono">
-                        {formatAddress(address)}
-                      </p>
-                    )}
-                    {!isCorrectNetwork && (
-                      <div className="flex items-center space-x-2 mt-2">
-                        <AlertTriangle className="w-4 h-4 text-orange-500" />
-                        <span className="text-xs text-orange-600">Wrong Network</span>
+                  
+                  {/* Connection Status Indicator */}
+                  {isConnected && (
+                    <div className="mt-3 px-3 py-2 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-green-800">Connected</span>
                       </div>
-                    )}
-                  </div>
-                )}
+                      {address && (
+                        <p className="text-xs text-green-600 mt-1 font-mono">
+                          {formatAddress(address)}
+                        </p>
+                      )}
+                      {!isCorrectNetwork && (
+                        <div className="flex items-center space-x-2 mt-2">
+                          <AlertTriangle className="w-4 h-4 text-orange-500" />
+                          <span className="text-xs text-orange-600">Wrong Network</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -346,11 +398,11 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
 
       {/* Overlay to close dropdowns */}
       {showNotifications && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setShowNotifications(false)}
-        />
-      )}
+  <div 
+    className="fixed inset-0 z-40" 
+    onClick={() => setShowNotifications(false)}
+  />
+)}
 
       {/* Main Content */}
       <div className={`pt-16 ${(networkError || connectionError) ? 'pt-28' : ''}`}>
