@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import Dashboard from '../components/Dashboard';
@@ -14,13 +13,16 @@ import Faucet from '../components/Faucet';
 import OnrampOfframpInterface from '@/components/BuyandSellInterface';
 import AdminInterface from '@/components/Admin';
 import UtilityPaymentInterface from '../components/UtilityInterface';
-import GaslessHome from '../components/Test'
+import GaslessHome from '../components/Test';
+import LandingPage from '../components/home/index';
 
 const Index = () => {
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState('landing');
 
   const renderCurrentPage = () => {
     switch (currentPage) {
+      case 'landing':
+        return null; // This won't be reached due to early return above
       case 'dashboard':
         return <Dashboard onPageChange={setCurrentPage} />;
       case 'send':
@@ -42,17 +44,20 @@ const Index = () => {
       case 'faucet':
         return <Faucet />;
       case 'Buy/Sell':
-        return <OnrampOfframpInterface />; 
+        return <OnrampOfframpInterface />;
       case 'utility':
         return <UtilityPaymentInterface />;
       case 'admin':
         return <AdminInterface />;
-     
-
       default:
-        return <Dashboard onPageChange={setCurrentPage} />;
+        return <LandingPage />;
     }
   };
+
+  // Don't wrap landing page with Layout since it should be a standalone page
+  if (currentPage === 'landing') {
+    return <LandingPage onPageChange={setCurrentPage} />;
+  }
 
   return (
     <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
