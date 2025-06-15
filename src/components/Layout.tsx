@@ -73,10 +73,11 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   const allNavigation = [...primaryNavigation, ...secondaryNavigation];
 
   const notifications = [
-    { id: 1, title: 'Transfer Completed', message: 'Your transfer to John Doe has been completed successfully.', time: '2 hours ago', unread: true },
-    { id: 2, title: 'Savings Milestone', message: 'Congratulations! You\'ve reached your savings goal.', time: '1 day ago', unread: true },
-    { id: 3, title: 'Family Transfer', message: 'Scheduled transfer to Mama Adunni processed.', time: '2 days ago', unread: false }
-  ];
+  //   { id: 1, title: 'Transfer Completed', message: 'Your transfer to John Doe has been completed successfully.', time: '2 hours ago', unread: true },
+  //   { id: 2, title: 'Savings Milestone', message: 'Congratulations! You\'ve reached your savings goal.', time: '1 day ago', unread: true },
+  //   { id: 3, title: 'Family Transfer', message: 'Scheduled transfer to Mama Adunni processed.', time: '2 days ago', unread: false }
+  // ];
+  ]
 
   // Format address for display
   const formatAddress = (addr: string) => {
@@ -96,18 +97,25 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
       {/* Top Navbar */}
       <div className="bg-white border-b border-stone-200 h-16 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-between h-full px-4 lg:px-8 max-w-7xl mx-auto">
+
           {/* Logo */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-terracotta to-sage rounded-lg flex items-center justify-center shadow-sm">
-                <span className="text-white font-bold text-sm">A</span>
-              </div>
-              <Link to="/" onClick={() => onPageChange('dashboard')}>
-                <span className="font-bold text-xl xl:text-2xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
-                  AfriRemit
-                </span>
-              </Link>
+          <div className="flex items-center curser-pointer space-x-3 group">
+            <Link to="/" className="flex items-center space-x-3">  
+            <div className="relative">
+              <img 
+                src="https://res.cloudinary.com/ecosheane/image/upload/v1749952368/logo_virjcs.jpg"
+                alt="AfriRemit Logo"
+                className="w-12 h-12 rounded-xl object-cover group-hover:shadow-orange-200 transition-all duration-300 group-hover:scale-105"
+              />
+              <div className="absolute -inset-1 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
             </div>
+            
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                AfriRemit
+              </span>
+            </div>
+            </Link>
           </div>
 
           {/* Desktop Navigation - Optimized */}
@@ -223,7 +231,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                   </div>
                 </div>
               )}
-            </div>
+          </div>
 
             {/* Settings */}
             <button
