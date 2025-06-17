@@ -13,31 +13,23 @@ import {
   CheckCircle,
   Loader2,
   Sparkles,
-  GripVertical
+  GripVertical,
+  AlertTriangle
 } from 'lucide-react';
 
+// Import the OpenRouter service
+import { getAIResponse, getContextualHelp, isConfigured } from './OpenRouter';
+
 // Utility function for className concatenation
-const cn = (...classes: (string | undefined | null | boolean)[]) => {
+const cn = (...classes) => {
   return classes.filter(Boolean).join(' ');
 };
 
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-}
-
-interface AIChatModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
-  const [messages, setMessages] = useState<Message[]>([
+const AIChatModal = ({ isOpen, onClose, context = 'general' }) => {
+  const [messages, setMessages] = useState([
     {
       id: '1',
-      text: "Hello! I'm your AfriRemit AI assistant. I can help you with transactions, account questions, troubleshooting, and general guidance. How can I assist you today?",
+      text: "How can I help you today!",
       isUser: false,
       timestamp: new Date()
     }
@@ -45,12 +37,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [error, setError] = useState(null);
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   const nodeRef = useRef(null);
 
   // Auto-scroll to bottom when new messages are added
@@ -81,26 +74,53 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Simulate AI response (replace with actual AI integration)
-  const simulateAIResponse = async (userMessage: string): Promise<string> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-    
-    // Simple response logic (replace with actual AI API call)
-    const responses = [
-      "I understand you're asking about " + userMessage.toLowerCase() + ". Let me help you with that. Based on your query, here are some suggestions...",
-      "Thanks for your question! For " + userMessage.toLowerCase() + ", I recommend checking your transaction history and ensuring your wallet is properly connected.",
-      "Great question! Regarding " + userMessage.toLowerCase() + ", here's what I can tell you: This is a common inquiry, and I'll guide you through the process step by step.",
-      "I can definitely help with that! For issues related to " + userMessage.toLowerCase() + ", please make sure you're on the correct network and your wallet has sufficient balance."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+  // Check if OpenRouter is configured
+  useEffect(() => {
+    if (!isConfigured()) {
+      setError('OpenRouter API is not properly configured. Please set up your API key.');
+    }
+  }, []);
+
+  // Get AI response using OpenRouter
+  const getSmartAIResponse = async (userMessage, messageHistory) => {
+    try {
+      // Prepare conversation history for context
+      const conversationMessages = messageHistory
+        .slice(-10) // Last 10 messages for context
+        .map(msg => ({
+          role: msg.isUser ? 'user' : 'assistant',
+          content: msg.text
+        }));
+
+      // Add current message
+      conversationMessages.push({
+        role: 'user',
+        content: userMessage
+      });
+
+      // Use contextual help if context is provided and it's a simple query
+      if (context !== 'general' && conversationMessages.length <= 2) {
+        return await getContextualHelp(context, userMessage);
+      }
+
+      // Otherwise use full conversation context
+      return await getAIResponse(conversationMessages);
+    } catch (error) {
+      console.error('AI Response Error:', error);
+      throw error;
+    }
   };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    const userMessage: Message = {
+    // Check configuration first
+    if (!isConfigured()) {
+      setError('Please configure your OpenRouter API key to use the AI assistant.');
+      return;
+    }
+
+    const userMessage = {
       id: Date.now().toString(),
       text: inputValue,
       isUser: true,
@@ -110,11 +130,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
+    setError(null);
 
     try {
-      const aiResponse = await simulateAIResponse(inputValue);
+      const aiResponse = await getSmartAIResponse(inputValue, messages);
       
-      const aiMessage: Message = {
+      const aiMessage = {
         id: (Date.now() + 1).toString(),
         text: aiResponse,
         isUser: false,
@@ -123,19 +144,34 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
 
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      const errorMessage: Message = {
+      console.error('Chat Error:', error);
+      
+      let errorMessage = "I apologize, but I'm having trouble responding right now. ";
+      
+      if (error.message.includes('API key')) {
+        errorMessage += "Please check your API configuration.";
+      } else if (error.message.includes('Rate limit')) {
+        errorMessage += "I'm receiving too many requests. Please try again in a moment.";
+      } else if (error.message.includes('service')) {
+        errorMessage += "The AI service is temporarily unavailable. Please try again later.";
+      } else {
+        errorMessage += "Please try again in a moment.";
+      }
+      
+      const errorMsg = {
         id: (Date.now() + 1).toString(),
-        text: "I apologize, but I'm having trouble responding right now. Please try again in a moment.",
+        text: errorMessage,
         isUser: false,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMsg]);
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -146,22 +182,30 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
     setMessages([
       {
         id: '1',
-        text: "Chat cleared! I'm still here to help. What would you like to know?",
+        text: "Chat cleared! I'm still here to help with AfriRemit, blockchain, and DeFi questions. What would you like to know?",
         isUser: false,
         timestamp: new Date()
       }
     ]);
+    setError(null);
   };
 
-  const copyMessage = (text: string, messageId: string) => {
+  const copyMessage = (text, messageId) => {
     navigator.clipboard.writeText(text);
     setCopiedId(messageId);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  // Quick action prompts specific to AfriRemit
+  const quickActions = [
+    "How do I swap tokens?",
+    "Explain Ajo savings",
+    "Check transaction fees"
+  ];
 
   if (!isOpen) return null;
 
@@ -192,7 +236,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header - Always show when minimized, or when no messages */}
+          {/* Header */}
           {(isMinimized || messages.length <= 1) && (
             <div className="drag-handle flex-shrink-0 flex items-center justify-between p-4 border-b border-stone-200 bg-gradient-to-r from-orange-500 to-green-500 rounded-t-2xl cursor-move">
               <div className="flex items-center space-x-3">
@@ -200,11 +244,16 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
                     <Bot className="w-5 h-5 text-orange-500" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                  <div className={cn(
+                    "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white",
+                    isConfigured() ? "bg-green-500" : "bg-red-500"
+                  )}></div>
                 </div>
                 <div>
                   <h3 className="font-semibold text-white">AfriRemit AI</h3>
-                  <p className="text-xs text-white/80">Always ready to help</p>
+                  <p className="text-xs text-white/80">
+                    {isConfigured() ? "Blockchain & DeFi Expert" : "Configuration needed"}
+                  </p>
                 </div>
               </div>
               
@@ -233,11 +282,11 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
 
           {!isMinimized && (
             <div className="flex flex-col h-full">
-              {/* Quick Actions - Only show when no messages */}
+              {/* Quick Actions */}
               {messages.length <= 1 && (
                 <div className="flex-shrink-0 p-3 border-b border-stone-100 bg-stone-50">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-stone-600">Quick Actions</span>
+                    <span className="text-xs font-medium text-stone-600">Quick Help</span>
                     <button
                       onClick={clearChat}
                       className="p-1 rounded-md hover:bg-stone-200 transition-colors"
@@ -247,22 +296,29 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
                     </button>
                   </div>
                   <div className="flex justify-between gap-2">
-                    {[
-                      "Help with transfers",
-                      "Account issues",
-                      "Transaction status"
-                    ].map((action) => (
+                    {quickActions.map((action) => (
                       <button
                         key={action}
                         onClick={() => {
                           setInputValue(action);
-                          handleSendMessage();
+                          setTimeout(handleSendMessage, 100);
                         }}
                         className="px-2 py-1 text-xs bg-white border border-stone-200 rounded-full hover:bg-stone-50 hover:border-orange-500 transition-colors flex-1 text-center truncate"
+                        disabled={!isConfigured()}
                       >
                         {action}
                       </button>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Error Banner */}
+              {error && (
+                <div className="flex-shrink-0 p-2 bg-red-50 border-b border-red-200">
+                  <div className="flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <span className="text-xs text-red-700">{error}</span>
                   </div>
                 </div>
               )}
@@ -281,7 +337,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
                       <div className="bg-white border border-stone-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                         <div className="flex items-center space-x-2">
                           <Loader2 className="w-4 h-4 text-stone-500 animate-spin" />
-                          <span className="text-sm text-stone-600">Thinking...</span>
+                          <span className="text-sm text-stone-600">Analyzing your question...</span>
                         </div>
                       </div>
                     </div>
@@ -368,27 +424,31 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose }) => {
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyDown={handleKeyPress}
-                      placeholder="Type your message..."
-                      className="w-full resize-none rounded-xl border border-stone-300 px-4 py-3 pr-12 text-sm placeholder-stone-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors"
+                      placeholder={isConfigured() ? "Talk blockchain..." : "Configure API key to use AI assistant"}
+                      className="w-full resize-none rounded-xl border border-stone-300 px-4 py-3 pr-12 text-sm placeholder-stone-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors disabled:bg-stone-100 disabled:cursor-not-allowed"
                       rows={1}
                       style={{
                         minHeight: '44px',
                         maxHeight: '120px'
                       }}
+                      disabled={!isConfigured()}
                     />
                     
                     {/* AI Sparkle Icon */}
                     <div className="absolute right-3 top-3">
-                      <Sparkles className="w-4 h-4 text-stone-400" />
+                      <Sparkles className={cn(
+                        "w-4 h-4",
+                        isConfigured() ? "text-stone-400" : "text-stone-300"
+                      )} />
                     </div>
                   </div>
                   
                   <button
                     onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isLoading}
+                    disabled={!inputValue.trim() || isLoading || !isConfigured()}
                     className={cn(
                       "p-3 rounded-xl transition-all duration-200",
-                      inputValue.trim() && !isLoading
+                      inputValue.trim() && !isLoading && isConfigured()
                         ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
                         : "bg-stone-200 text-stone-400 cursor-not-allowed"
                     )}
