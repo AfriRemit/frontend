@@ -389,7 +389,7 @@ const AIChatModal = ({ isOpen, onClose, context = 'general' }) => {
                                 ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2" {...props} />,
                                 ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2" {...props} />,
                                 li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                                code: ({node, inline, ...props}) => 
+                                code: ({node, inline, ...props}: {node?: any; inline?: boolean; [key: string]: any}) => 
                                   inline ? 
                                     <code className="bg-stone-100 px-1 py-0.5 rounded text-sm" {...props} /> :
                                     <code className="block bg-stone-100 p-2 rounded text-sm mb-2" {...props} />,
