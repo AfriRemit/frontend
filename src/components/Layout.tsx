@@ -353,7 +353,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                       className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
                     >
                       <MessageCircle className="w-5 h-5" />
-                      <span>AI Assistant</span>
+                      <span>AfriRemit AI</span>
                       <span className="ml-auto w-2 h-2 bg-gradient-to-r from-terracotta to-sage rounded-full animate-pulse"></span>
                     </button>
                     <button 
