@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createThirdwebClient } from 'thirdweb';
 import { ConnectButton } from 'thirdweb/react';
 
@@ -42,6 +42,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   
   const { 
     isConnected, 
@@ -94,6 +95,20 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   };
 
   const isCurrentPageInSecondary = secondaryNavigation.some(item => item.key === currentPage);
+
+  // Add click outside handler for More menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-stone-50 max-w-7xl mx-auto">
@@ -161,7 +176,10 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
 
               {/* More Dropdown Menu */}
               {showMoreMenu && (
-                <div className="absolute z-50 top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                <div 
+                  ref={moreMenuRef}
+                  className="absolute z-50 top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1"
+                >
                   {secondaryNavigation.map((item) => (
                     <button
                       key={item.key}

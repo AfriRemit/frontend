@@ -9,52 +9,64 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onPageChange: (page: string) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const footerLinks = {
     platform: [
-      { name: 'Dashboard', href: '#' },
-      { name: 'Swap Tokens', href: '#' },
-      { name: 'Savings Groups', href: '#' },
-      { name: 'Send Money', href: '#' },
-      { name: 'Buy/Sell', href: '#' }
+      { name: 'Dashboard', page: 'dashboard' },
+      { name: 'Swap Tokens', page: 'swap' },
+      { name: 'Savings Groups', page: 'savings' },
+      { name: 'Send Money', page: 'send' },
+      { name: 'Buy/Sell', page: 'Buy/Sell' }
     ],
     resources: [
-      { name: 'Documentation', href: '#' },
-      { name: 'API Reference', href: '#' },
-      { name: 'Help Center', href: '#' },
-      { name: 'Blog', href: '#' },
-      { name: 'Tutorials', href: '#' }
+      { name: 'Documentation', href: 'https://docs.afriremit.com', external: true },
+      { name: 'API Reference', href: 'https://api.afriremit.com', external: true },
+      { name: 'Help Center', href: 'https://help.afriremit.com', external: true },
+      { name: 'Blog', href: 'https://blog.afriremit.com', external: true },
+      { name: 'Tutorials', href: 'https://tutorials.afriremit.com', external: true }
     ],
     company: [
-      { name: 'About Us', href: '#' },
-      { name: 'Careers', href: '#' },
-      { name: 'Press Kit', href: '#' },
-      { name: 'Partners', href: '#' },
-      { name: 'Contact', href: '#contact' }
+      { name: 'About Us', href: 'https://afriremit.com/about', external: true },
+      { name: 'Careers', href: 'https://afriremit.com/careers', external: true },
+      { name: 'Press Kit', href: 'https://afriremit.com/press', external: true },
+      { name: 'Partners', href: 'https://afriremit.com/partners', external: true },
+      { name: 'Contact', href: 'mailto:contact@afriremit.com', external: true }
     ],
     legal: [
-      { name: 'Terms of Service', href: '#' },
-      { name: 'Privacy Policy', href: '#' },
-      { name: 'Cookie Policy', href: '#' },
-      { name: 'Security', href: '#' },
-      { name: 'Compliance', href: '#' }
+      { name: 'Terms of Service', href: 'https://afriremit.com/terms', external: true },
+      { name: 'Privacy Policy', href: 'https://afriremit.com/privacy', external: true },
+      { name: 'Cookie Policy', href: 'https://afriremit.com/cookies', external: true },
+      { name: 'Security', href: 'https://afriremit.com/security', external: true },
+      { name: 'Compliance', href: 'https://afriremit.com/compliance', external: true }
     ]
   };
 
   const socialLinks = [
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Github, href: '#', label: 'GitHub' },
-    { icon: MessageCircle, href: '#', label: 'Discord' },
-    { icon: Mail, href: 'mailto:hello@afriremit.com', label: 'Email' }
+    { icon: Twitter, href: 'https://twitter.com/afriremit', label: 'Twitter', external: true },
+    { icon: Github, href: 'https://github.com/afriremit', label: 'GitHub', external: true },
+    { icon: MessageCircle, href: 'https://discord.gg/afriremit', label: 'Discord', external: true },
+    { icon: Mail, href: 'mailto:hello@afriremit.com', label: 'Email', external: true }
   ];
 
   const supportedTokens = [
     'cNGN', 'cKES', 'cZAR', 'cGHS', 'AFX', 'USDT', 'WETH', 'AFR'
   ];
+
+  const handleLinkClick = (link: { page?: string; href?: string; external?: boolean }) => {
+    if (link.page) {
+      onPageChange(link.page);
+    } else if (link.href && link.external) {
+      window.open(link.href, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <footer className="bg-gray-900 text-white relative overflow-hidden">
@@ -104,6 +116,8 @@ const Footer: React.FC = () => {
                   <a
                     key={index}
                     href={social.href}
+                    target={social.external ? "_blank" : undefined}
+                    rel={social.external ? "noopener noreferrer" : undefined}
                     className="w-10 h-10 bg-gray-800 hover:bg-gradient-to-r hover:from-green-500 hover:to-blue-600 rounded-lg flex items-center justify-center transition-all duration-300 group"
                     aria-label={social.label}
                   >
@@ -119,13 +133,13 @@ const Footer: React.FC = () => {
               <ul className="space-y-3">
                 {footerLinks.platform.map((link, index) => (
                   <li key={index}>
-                    <a
-                      href={link.href}
-                      className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center group"
+                    <button
+                      onClick={() => handleLinkClick(link)}
+                      className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center group w-full text-left"
                     >
                       {link.name}
                       <ExternalLink className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -139,6 +153,8 @@ const Footer: React.FC = () => {
                   <li key={index}>
                     <a
                       href={link.href}
+                      target={link.external ? "_blank" : undefined}
+                      rel={link.external ? "noopener noreferrer" : undefined}
                       className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center group"
                     >
                       {link.name}
@@ -157,6 +173,8 @@ const Footer: React.FC = () => {
                   <li key={index}>
                     <a
                       href={link.href}
+                      target={link.external ? "_blank" : undefined}
+                      rel={link.external ? "noopener noreferrer" : undefined}
                       className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center group"
                     >
                       {link.name}
@@ -175,6 +193,8 @@ const Footer: React.FC = () => {
                   <li key={index}>
                     <a
                       href={link.href}
+                      target={link.external ? "_blank" : undefined}
+                      rel={link.external ? "noopener noreferrer" : undefined}
                       className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center group"
                     >
                       {link.name}

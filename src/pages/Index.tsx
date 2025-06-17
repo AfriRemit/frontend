@@ -82,48 +82,54 @@ type RouteKey = keyof typeof routes;
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState<RouteKey>('landing');
+  
+  // Get initial page from URL or localStorage
+  const getInitialPage = (): RouteKey => {
+    const path = location.pathname;
+    if (path.startsWith('/app/')) {
+      const page = path.split('/app/')[1] as RouteKey;
+      return routes[page] ? page : 'landing';
+    }
+    const savedPage = localStorage.getItem('currentPage') as RouteKey;
+    return savedPage && routes[savedPage] ? savedPage : 'landing';
+  };
 
-  // Handle initial route and URL changes
+  const [currentPage, setCurrentPage] = useState<RouteKey>(getInitialPage);
+
+  // Single effect to handle all routing
   useEffect(() => {
     const path = location.pathname;
     
-    // Always default to landing page on initial load
-    if (path === '/' || path === '/landing' || !path) {
-      setCurrentPage('landing');
-      localStorage.setItem('currentPage', 'landing');
-      return;
-    }
-
     // Handle app routes
     if (path.startsWith('/app/')) {
       const page = path.split('/app/')[1] as RouteKey;
-      if (page && routes[page]) {
+      if (routes[page]) {
         setCurrentPage(page);
         localStorage.setItem('currentPage', page);
       } else {
-        // If invalid route, redirect to landing
+        setCurrentPage('landing');
+        localStorage.setItem('currentPage', 'landing');
         navigate('/', { replace: true });
       }
+    } else if (path === '/' || path === '/landing' || !path) {
+      setCurrentPage('landing');
+      localStorage.setItem('currentPage', 'landing');
     } else {
-      // If any other route, redirect to landing
+      setCurrentPage('landing');
+      localStorage.setItem('currentPage', 'landing');
       navigate('/', { replace: true });
     }
   }, [location.pathname, navigate]);
-
-  // Update URL when page changes
-  useEffect(() => {
-    if (currentPage === 'landing') {
-      navigate('/', { replace: true });
-    } else {
-      navigate(`/app/${currentPage}`, { replace: true });
-    }
-  }, [currentPage, navigate]);
 
   const handlePageChange = (page: string) => {
     if (routes[page as RouteKey]) {
       setCurrentPage(page as RouteKey);
       localStorage.setItem('currentPage', page);
+      if (page === 'landing') {
+        navigate('/', { replace: true });
+      } else {
+        navigate(`/app/${page}`, { replace: true });
+      }
     }
   };
 

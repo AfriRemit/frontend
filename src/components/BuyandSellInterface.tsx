@@ -470,18 +470,18 @@ const OnrampOfframpInterface = () => {
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <input
                 type="text"
                 inputMode="decimal"
                 pattern="[0-9]*[.,]?[0-9]*"
                 value={fiatAmount}
                 onChange={handleFiatAmountChange}
-                className="w-24 text-2xl font-semibold bg-transparent border-none outline-none"
+                className="w-full sm:w-24 text-2xl font-semibold bg-transparent border-none outline-none"
                 placeholder="0.00"
               />
 
-              <div className="flex items-center space-x-2 ml-6">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <img
                   src={getTokenImage(selectedCrypto)}
                   alt={selectedFiat}
@@ -490,8 +490,8 @@ const OnrampOfframpInterface = () => {
                 <select
                   value={selectedFiat}
                   onChange={(e) => setSelectedFiat(e.target.value)}
-                  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
-                  disabled={selectedCrypto === 'AFX'} // Disable if AFX is selected since it's pegged to NGN
+                  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium w-full sm:w-auto min-w-[120px] text-base"
+                  disabled={selectedCrypto === 'AFX'}
                 >
                   {fiatCurrencies.map(currency => (
                     <option key={currency.code} value={currency.code}>
@@ -518,17 +518,17 @@ const OnrampOfframpInterface = () => {
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <input
                 type="text"
                 pattern="[0-9]*[.,]?[0-9]*"
                 value={cryptoAmount}
                 onChange={handleCryptoAmountChange}
-                className="w-24 text-2xl font-semibold bg-transparent border-none outline-none"
+                className="w-full sm:w-24 text-2xl font-semibold bg-transparent border-none outline-none"
                 placeholder="0.0"
               />
 
-              <div className="flex items-center space-x-2 ml-6">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <img
                   src={getTokenImage(selectedCrypto)}
                   alt={selectedCrypto}
@@ -538,7 +538,7 @@ const OnrampOfframpInterface = () => {
                 <select
                   value={selectedCrypto}
                   onChange={(e) => setSelectedCrypto(e.target.value)}
-                  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
+                  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium w-full sm:w-auto min-w-[120px] text-base"
                 >
                   {filteredTokens.map(token => (
                     <option key={token.symbol} value={token.symbol}>
