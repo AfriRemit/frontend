@@ -5,7 +5,7 @@ const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '<OPENROUTER_API_KEY>',
   defaultHeaders: {
-    'HTTP-Referer': import.meta.env.VITE_SITE_URL || 'https://afriremit.com',
+    'HTTP-Referer': import.meta.env.VITE_SITE_URL || 'https://afriremit.vercel.app/',
     'X-Title': 'AfriRemit - AI Assistant',
   },
   dangerouslyAllowBrowser: true,
