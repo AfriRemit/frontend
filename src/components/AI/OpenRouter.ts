@@ -62,6 +62,11 @@ Respond as a knowledgeable, helpful assistant focused on empowering users with b
  */
 export const getAIResponse = async (messages, model = 'openai/gpt-4o') => {
   try {
+    // Check configuration first
+    if (!isConfigured()) {
+      throw new Error('OpenRouter API is not properly configured. Please set up your API key.');
+    }
+
     // Prepare messages with system prompt
     const messagesWithSystem = [
       {
@@ -81,19 +86,27 @@ export const getAIResponse = async (messages, model = 'openai/gpt-4o') => {
       presence_penalty: 0,
     });
 
+    if (!completion.choices?.[0]?.message?.content) {
+      throw new Error('No response received from AI service');
+    }
+
     return completion.choices[0].message.content;
   } catch (error) {
     console.error('OpenRouter API Error:', error);
     
-    // Handle different error types
+    // Handle different error types with more specific messages
     if (error.status === 401) {
       throw new Error('Invalid API key. Please check your OpenRouter configuration.');
     } else if (error.status === 429) {
       throw new Error('Rate limit exceeded. Please try again in a moment.');
     } else if (error.status >= 500) {
       throw new Error('OpenRouter service temporarily unavailable. Please try again.');
+    } else if (error.message.includes('model')) {
+      throw new Error('Selected AI model is not available. Please try again with a different model.');
+    } else if (error.message.includes('network')) {
+      throw new Error('Network error. Please check your internet connection.');
     } else {
-      throw new Error('Failed to get AI response. Please try again.');
+      throw new Error(`Failed to get AI response: ${error.message}`);
     }
   }
 };
@@ -146,7 +159,21 @@ export const getContextualHelp = async (context, userQuestion) => {
  */
 export const isConfigured = () => {
   const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-  return apiKey && apiKey !== '<OPENROUTER_API_KEY>' && apiKey.length > 10;
+  const siteUrl = import.meta.env.VITE_SITE_URL;
+  
+  // Check if API key exists and is properly formatted
+  if (!apiKey || apiKey === '<OPENROUTER_API_KEY>' || apiKey.length < 10) {
+    console.error('OpenRouter API key is not properly configured');
+    return false;
+  }
+
+  // Check if site URL is configured
+  if (!siteUrl) {
+    console.error('Site URL is not configured for OpenRouter');
+    return false;
+  }
+
+  return true;
 };
 
 /**
