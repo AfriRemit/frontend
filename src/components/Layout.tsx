@@ -23,11 +23,13 @@ import {
   Zap,
   AlertTriangle,
   MoreHorizontal,
-  ChevronDown
+  ChevronDown,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
 import { Link } from 'react-router-dom';
+import AIChatModal from '../components/AI/Chat';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -39,6 +41,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
   
   const { 
     isConnected, 
@@ -192,6 +195,16 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
 
           {/* Right side icons - Desktop */}
           <div className="hidden lg:flex items-center space-x-2">
+            {/* AI Chat Button */}
+            <button 
+              onClick={() => setShowAIChat(true)}
+              className="p-2 rounded-lg hover:bg-stone-100 transition-colors relative group"
+              title="AI Assistant"
+            >
+              <MessageCircle className="w-5 h-5 text-stone-700 group-hover:text-terracotta transition-colors" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-terracotta to-sage rounded-full animate-pulse"></div>
+            </button>
+
             {/* Notifications */}
             <div className="relative">
               <button 
@@ -333,6 +346,17 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                   {/* Mobile additional options */}
                   <div className="mt-6 px-4 space-y-2 border-t border-stone-200 pt-4">
                     <button 
+                      onClick={() => {
+                        setShowAIChat(true);
+                        setSidebarOpen(false);
+                      }}
+                      className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      <span>AI Assistant</span>
+                      <span className="ml-auto w-2 h-2 bg-gradient-to-r from-terracotta to-sage rounded-full animate-pulse"></span>
+                    </button>
+                    <button 
                       onClick={() => setShowNotifications(!showNotifications)}
                       className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
                     >
@@ -411,6 +435,14 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     onClick={() => setShowNotifications(false)}
   />
 )}
+
+      {/* AI Chat Modal */}
+      {showAIChat && (
+        <AIChatModal 
+          isOpen={showAIChat} 
+          onClose={() => setShowAIChat(false)} 
+        />
+      )}
 
       {/* Main Content */}
       <div className={`pt-16 ${(networkError || connectionError) ? 'pt-28' : ''}`}>
