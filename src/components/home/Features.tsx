@@ -1,160 +1,82 @@
 import React from 'react';
-import { 
-  RefreshCw, 
-  PiggyBank, 
-  Send, 
-  CreditCard, 
-  Zap, 
-  Shield, 
-  Globe, 
-  TrendingUp,
-  Users,
-  Banknote
-} from 'lucide-react';
+import { ArrowRight, Shield, Users, Gift, Wallet, AlertCircle } from 'lucide-react';
 
-const Features: React.FC = () => {
-  const mainFeatures = [
-    {
-      icon: RefreshCw,
-      title: "Token Swapping",
-      description: "Seamless cross-border stablecoin swaps with deep liquidity and competitive rates across African and international markets.",
-      gradient: "from-blue-500 to-cyan-500",
-      bg: "bg-blue-500/5"
-    },
-    {
-      icon: PiggyBank,
-      title: "Digital Savings Groups",
-      description: "Traditional Ajo/Esusu savings reimagined with smart contract automation, transparency, and guaranteed payouts.",
-      gradient: "from-green-500 to-emerald-500",
-      bg: "bg-green-500/5"
-    },
-    {
-      icon: Send,
-      title: "Send Money",
-      description: "Lightning-fast native and ERC20 token transfers with minimal fees across borders and within local markets.",
-      gradient: "from-purple-500 to-pink-500",
-      bg: "bg-purple-500/5"
-    },
-    {
-      icon: CreditCard,
-      title: "Buy/Sell Crypto",
-      description: "Easy on-ramp and off-ramp services for seamless fiat-to-crypto conversions with multiple payment methods.",
-      gradient: "from-orange-500 to-red-500",
-      bg: "bg-orange-500/5"
-    }
-  ];
+interface FeaturesProps {
+  onPageChange?: (page: string) => void;
+}
 
-  const additionalFeatures = [
-    {
-      icon: Zap,
-      title: "Utility Payments",
-      description: "Pay bills, buy airtime, and handle daily transactions directly from your crypto wallet.",
-      iconColor: "text-yellow-500",
-      iconBg: "bg-yellow-500/10"
-    },
-    {
-      icon: Shield,
-      title: "Bank-Grade Security",
-      description: "Advanced security protocols and smart contract audits ensure your funds are always protected.",
-      iconColor: "text-green-500",
-      iconBg: "bg-green-500/10"
-    },
-    {
-      icon: Globe,
-      title: "Global Accessibility",
-      description: "Access African stablecoins from anywhere in the world with 24/7 availability.",
-      iconColor: "text-blue-500",
-      iconBg: "bg-blue-500/10"
-    },
-    {
-      icon: TrendingUp,
-      title: "Liquidity Rewards",
-      description: "Earn AFR tokens by providing liquidity to trading pairs and contributing to ecosystem growth.",
-      iconColor: "text-purple-500",
-      iconBg: "bg-purple-500/10"
-    },
-    {
-      icon: Users,
-      title: "Agent Network",
-      description: "Join our trusted agent network to create and manage savings groups while earning rewards.",
-      iconColor: "text-indigo-500",
-      iconBg: "bg-indigo-500/10"
-    },
-    {
-      icon: Banknote,
-      title: "Multi-Currency Support",
-      description: "Trade with cNGN, cKES, cZAR, cGHS, AFX, USDT, and more African and international stablecoins.",
-      iconColor: "text-pink-500",
-      iconBg: "bg-pink-500/10"
+const Features: React.FC<FeaturesProps> = ({ onPageChange }) => {
+  const handleGetStarted = () => {
+    if (onPageChange) {
+      onPageChange('dashboard');
     }
-  ];
+  };
 
   return (
-    <section id="features" className="py-24 bg-gray-50/50">
+    <section id="features" className="py-20 bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-20">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-full text-sm font-medium text-gray-700 mb-6">
-            <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-full"></div>
-            Powerful Features
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-full text-sm font-medium text-orange-700 mb-6">
+            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+            Features
           </div>
-          <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
-            Everything You Need for
-            <br />
-            <span className="text-black  text-4xl bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">
-              Modern African Finance
-            </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
+            Everything You Need to
+            <span className="bg-gradient-to-r from-orange-500 via-red-500 to-amber-500 bg-clip-text text-transparent"> Trade & Save</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Experience the future of African finance with our comprehensive DeFi platform built on Lisk blockchain
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Access a comprehensive suite of DeFi tools designed specifically for African markets
           </p>
         </div>
 
-        {/* Main Features Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-24">
-          {mainFeatures.map((feature, index) => (
-            <div
-              key={index}
-              className={`group relative p-6 md:p-8 rounded-2xl ${feature.bg} border border-white/50 backdrop-blur-sm hover:border-gray-200/50 transition-all duration-500 hover:-translate-y-1`}
-            >
-              <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6 text-center md:text-left">
-                <div className={`flex-shrink-0 w-16 h-16 md:w-14 md:h-14 bg-gradient-to-r ${feature.gradient} rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform duration-300`}>
-                  <feature.icon className="w-8 h-8 md:w-7 md:h-7 text-white" />
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+          {[
+            {
+              icon: Shield,
+              title: 'Secure Trading',
+              description: 'Trade with confidence using our secure and audited smart contracts',
+              gradient: 'from-orange-500 to-red-500'
+            },
+            {
+              icon: Users,
+              title: 'Community Savings',
+              description: 'Join traditional savings groups with modern blockchain technology',
+              gradient: 'from-yellow-500 to-orange-500'
+            },
+            {
+              icon: Gift,
+              title: 'Rewards Program',
+              description: 'Earn rewards for trading and participating in the ecosystem',
+              gradient: 'from-purple-500 to-pink-500'
+            },
+            {
+              icon: Wallet,
+              title: 'Multi-Currency',
+              description: 'Support for multiple African stablecoins and global cryptocurrencies',
+              gradient: 'from-green-500 to-emerald-500'
+            },
+            {
+              icon: AlertCircle,
+              title: 'Real-time Alerts',
+              description: 'Get instant notifications for price movements and market updates',
+              gradient: 'from-blue-500 to-cyan-500'
+            }
+          ].map((feature, index) => (
+            <div key={index} className="group">
+              <div className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-3xl p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className={`w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <feature.icon className="w-7 h-7 text-white" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 group-hover:text-gray-800 transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed text-sm md:text-base">
-                    {feature.description}
-                  </p>
-                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{feature.description}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Additional Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-20">
-          {additionalFeatures.map((feature, index) => (
-            <div
-              key={index}
-              className="group p-5 md:p-6 bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 hover:border-gray-300/50 hover:bg-white/80 transition-all duration-300 hover:-translate-y-0.5 text-center"
-            >
-              <div className={`w-14 h-14 md:w-12 md:h-12 ${feature.iconBg} rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-105 transition-transform duration-300`}>
-                <feature.icon className={`w-7 h-7 md:w-6 md:h-6 ${feature.iconColor}`} />
-              </div>
-              <h4 className="text-lg md:text-lg font-semibold text-gray-900 mb-2">
-                {feature.title}
-              </h4>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Modern CTA Section */}
+        {/* CTA Section */}
         <div className="relative overflow-hidden">
           <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-12 text-center relative">
             {/* Subtle background pattern */}
@@ -172,7 +94,10 @@ const Features: React.FC = () => {
               <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
                 Join thousands of users already trading and saving with AfriRemit
               </p>
-              <button className="group bg-white text-gray-900 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-300 hover:-translate-y-0.5">
+              <button 
+                onClick={handleGetStarted}
+                className="group bg-white text-gray-900 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-300 hover:-translate-y-0.5"
+              >
                 <span className="flex items-center gap-2">
                   Get Started Today
                   <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-blue-500 rounded-full group-hover:scale-110 transition-transform duration-300"></div>

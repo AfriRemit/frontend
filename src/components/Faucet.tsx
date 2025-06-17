@@ -73,30 +73,31 @@ const FaucetComponent = () => {
               )}
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <input
                 type="number"
                 disabled={!isConnected}
                 value={token1Amount}
                 onChange={(e) => setToken1Amount(e.target.value)}
-                className="flex-1 text-2xl font-semibold bg-transparent border-none outline-none"
+                className="w-full sm:w-24 text-2xl font-semibold bg-transparent border-none outline-none"
                 placeholder="0.0"
               />
               
-              <select
-                value={fromToken}
-                onChange={(e) => setFromToken(e.target.value)}
-                className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium"
-              >
-                {tokens
-  .filter(token => token.symbol !== 'ETH' && token.symbol !== 'AFX')
-  .map(token => (
-    <option key={token.symbol} value={token.symbol}>
-      {token.symbol}
-    </option>
-  ))}
-
-              </select>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <select
+                  value={fromToken}
+                  onChange={(e) => setFromToken(e.target.value)}
+                  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium w-full sm:w-auto min-w-[120px] text-base"
+                >
+                  {tokens
+                    .filter(token => token.symbol !== 'ETH' && token.symbol !== 'AFX')
+                    .map(token => (
+                      <option key={token.symbol} value={token.symbol}>
+                        {token.symbol}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
             
             <button 

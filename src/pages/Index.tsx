@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Dashboard from '../components/Dashboard';
 import SendMoney from '../components/SendMoney';
@@ -16,53 +17,145 @@ import UtilityPaymentInterface from '../components/UtilityInterface';
 import GaslessHome from '../components/Test';
 import LandingPage from '../components/home/index';
 
-const Index = () => {
-  const [currentPage, setCurrentPage] = useState('landing');
+// Route configuration
+const routes = {
+  landing: {
+    component: LandingPage,
+    requiresLayout: false,
+  },
+  dashboard: {
+    component: Dashboard,
+    requiresLayout: true,
+  },
+  send: {
+    component: SendMoney,
+    requiresLayout: true,
+  },
+  swap: {
+    component: SwapInterface,
+    requiresLayout: true,
+  },
+  savings: {
+    component: SavingsInterface,
+    requiresLayout: true,
+  },
+  family: {
+    component: FamilyTransfers,
+    requiresLayout: true,
+  },
+  referral: {
+    component: ReferralSystem,
+    requiresLayout: true,
+  },
+  withdraw: {
+    component: WithdrawalInterface,
+    requiresLayout: true,
+  },
+  deposit: {
+    component: DepositInterface,
+    requiresLayout: true,
+  },
+  profile: {
+    component: Profile,
+    requiresLayout: true,
+  },
+  faucet: {
+    component: Faucet,
+    requiresLayout: true,
+  },
+  'Buy/Sell': {
+    component: OnrampOfframpInterface,
+    requiresLayout: true,
+  },
+  utility: {
+    component: UtilityPaymentInterface,
+    requiresLayout: true,
+  },
+  admin: {
+    component: AdminInterface,
+    requiresLayout: true,
+  },
+} as const;
 
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'landing':
-        return null; // This won't be reached due to early return above
-      case 'dashboard':
-        return <Dashboard onPageChange={setCurrentPage} />;
-      case 'send':
-        return <SendMoney />;
-      case 'swap':
-        return <SwapInterface />;
-      case 'savings':
-        return <SavingsInterface />;
-      case 'family':
-        return <FamilyTransfers />;
-      case 'referral':
-        return <ReferralSystem />;
-      case 'withdraw':
-        return <WithdrawalInterface />;
-      case 'deposit':
-        return <DepositInterface />;
-      case 'profile':
-        return <Profile />;
-      case 'faucet':
-        return <Faucet />;
-      case 'Buy/Sell':
-        return <OnrampOfframpInterface />;
-      case 'utility':
-        return <UtilityPaymentInterface />;
-      case 'admin':
-        return <AdminInterface />;
-      default:
-        return <LandingPage />;
+type RouteKey = keyof typeof routes;
+
+const Index = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get initial page from URL or localStorage
+  const getInitialPage = (): RouteKey => {
+    const path = location.pathname;
+    if (path.startsWith('/app/')) {
+      const page = path.split('/app/')[1] as RouteKey;
+      return routes[page] ? page : 'landing';
+    }
+    const savedPage = localStorage.getItem('currentPage') as RouteKey;
+    return savedPage && routes[savedPage] ? savedPage : 'landing';
+  };
+
+  const [currentPage, setCurrentPage] = useState<RouteKey>(getInitialPage);
+
+  // Single effect to handle all routing
+  useEffect(() => {
+    const path = location.pathname;
+    
+    // Handle app routes
+    if (path.startsWith('/app/')) {
+      const page = path.split('/app/')[1] as RouteKey;
+      if (routes[page]) {
+        setCurrentPage(page);
+        localStorage.setItem('currentPage', page);
+      } else {
+        setCurrentPage('landing');
+        localStorage.setItem('currentPage', 'landing');
+        navigate('/', { replace: true });
+      }
+    } else if (path === '/' || path === '/landing' || !path) {
+      setCurrentPage('landing');
+      localStorage.setItem('currentPage', 'landing');
+    } else {
+      setCurrentPage('landing');
+      localStorage.setItem('currentPage', 'landing');
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const handlePageChange = (page: string) => {
+    if (routes[page as RouteKey]) {
+      setCurrentPage(page as RouteKey);
+      localStorage.setItem('currentPage', page);
+      if (page === 'landing') {
+        navigate('/', { replace: true });
+      } else {
+        navigate(`/app/${page}`, { replace: true });
+      }
     }
   };
 
-  // Don't wrap landing page with Layout since it should be a standalone page
-  if (currentPage === 'landing') {
-    return <LandingPage onPageChange={setCurrentPage} />;
-  }
+  const renderCurrentPage = () => {
+    const route = routes[currentPage];
+    if (!route) {
+      return <LandingPage onPageChange={handlePageChange} />;
+    }
+
+    const Component = route.component;
+    return <Component onPageChange={handlePageChange} />;
+  };
+
+  const route = routes[currentPage];
+  const shouldUseLayout = route?.requiresLayout ?? false;
 
   return (
-    <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
-      {renderCurrentPage()}
-    </Layout>
+    <div className="min-h-screen bg-gray-50">
+      {shouldUseLayout ? (
+        <Layout currentPage={currentPage} onPageChange={handlePageChange}>
+          {renderCurrentPage()}
+        </Layout>
+      ) : (
+        renderCurrentPage()
+      )}
+    </div>
   );
 };
 

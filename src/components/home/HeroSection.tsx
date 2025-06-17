@@ -153,24 +153,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onPageChange }) => {
 
           {/* CTA Buttons - Fixed Navigation */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
-            {onPageChange ? (
-              // If onPageChange prop is available, use it (for single-page app navigation)
-              <button 
-                onClick={handleStartTrading}  
-                className="bg-orange-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-orange-600 transition-colors duration-200 flex items-center space-x-2"
-              >
-                <span>Start Trading Now</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            ) : (
-              // If no onPageChange prop, use React Router Link
-              <Link to="/">
-                <button className="bg-orange-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-orange-600 transition-colors duration-200 flex items-center space-x-2">
-                  <span>Start Trading Now</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </Link>
-            )}
+            <button 
+              onClick={handleStartTrading}  
+              className="bg-orange-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-orange-600 transition-colors duration-200 flex items-center space-x-2"
+            >
+              <span>Start Trading Now</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
             
             <button className="border border-gray-300 text-gray-700 px-8 py-4 rounded-full font-semibold text-lg hover:border-orange-400 hover:text-orange-600 transition-colors duration-200">
               Watch Demo

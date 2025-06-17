@@ -535,6 +535,23 @@ const handleCopyInviteCode = async (inviteCode) => {
     );
   }
 
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [expandedGroupRef, setExpandedGroupRef] = useState<HTMLDivElement | null>(null);
+
+  // Add click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (expandedGroupRef && !expandedGroupRef.contains(event.target as Node)) {
+        setExpandedGroup(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [expandedGroupRef]);
+
   return (
     <>
       {/* Agent Registration Modal */}
@@ -934,7 +951,13 @@ const handleCopyInviteCode = async (inviteCode) => {
               {myGroups
                 .filter(group => group[2] === address && !group[11]) // Add !group[11] here too
                 .map((group) => (
-                  <div key={group[0]} className="bg-stone-50 rounded-xl p-6 border-l-4 border-amber-500">
+                  <div
+                    key={group[0]}
+                    ref={group[0] === expandedGroup ? setExpandedGroupRef : null}
+                    className={`bg-stone-50 rounded-xl p-6 border-l-4 border-amber-500 overflow-hidden transition-all duration-300 ${
+                      expandedGroup === group[0] ? 'ring-2 ring-terracotta' : ''
+                    }`}
+                  >
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h5 className="font-semibold text-stone-800 text-lg">{group[1]}</h5>
@@ -1078,7 +1101,13 @@ const handleCopyInviteCode = async (inviteCode) => {
               {myGroups
                 .filter(group => group[2] !== address)
                 .map((group) => (
-                  <div key={group[0]} className="bg-stone-50 rounded-xl p-6 border-l-4 border-blue-500">
+                  <div
+                    key={group[0]}
+                    ref={group[0] === expandedGroup ? setExpandedGroupRef : null}
+                    className={`bg-stone-50 rounded-xl p-6 border-l-4 border-blue-500 overflow-hidden transition-all duration-300 ${
+                      expandedGroup === group[0] ? 'ring-2 ring-terracotta' : ''
+                    }`}
+                  >
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h5 className="font-semibold text-stone-800 text-lg">{group[1]}</h5>
@@ -1198,7 +1227,13 @@ const handleCopyInviteCode = async (inviteCode) => {
       {myGroups
         .filter(group => group[11])
         .map((group) => (
-          <div key={group[0]} className="bg-stone-50 rounded-xl p-6 border-l-4 border-emerald-500 opacity-75">
+          <div
+            key={group[0]}
+            ref={group[0] === expandedGroup ? setExpandedGroupRef : null}
+            className={`bg-stone-50 rounded-xl p-6 border-l-4 border-emerald-500 opacity-75 overflow-hidden transition-all duration-300 ${
+              expandedGroup === group[0] ? 'ring-2 ring-terracotta' : ''
+            }`}
+          >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h5 className="font-semibold text-stone-800 text-lg">{group[1]}</h5>
@@ -1308,13 +1343,18 @@ const handleCopyInviteCode = async (inviteCode) => {
               <div className="space-y-4">
                 <h4 className="font-semibold text-stone-800">Available Groups</h4>
                 {availableGroups.map((group) => (
-                  <div key={group.groupId} className="bg-stone-50 rounded-xl p-6">
+                  <div
+                    key={group.groupId}
+                    ref={group.groupId === expandedGroup ? setExpandedGroupRef : null}
+                    className={`bg-stone-50 rounded-xl p-6 overflow-hidden transition-all duration-300 ${
+                      expandedGroup === group.groupId ? 'ring-2 ring-terracotta' : ''
+                    }`}
+                  >
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h5 className="font-semibold text-stone-800 text-lg">{group.name}</h5>
                         <p className="text-stone-600 text-sm mb-2">Created by {group.creatorName || 'Unknown'}</p>
-                        <div className="flex items-center space-x-4">
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.isActive, group.isCompleted, group.canJoin)}`}>
+                        <div className="flex items-center space-x-4">                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(group.isActive, group.isCompleted, group.canJoin)}`}>
                             {getGroupStatus(group)}
                           </span>
                           <span className="text-stone-600 text-sm">

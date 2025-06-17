@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createThirdwebClient } from 'thirdweb';
 import { ConnectButton } from 'thirdweb/react';
 
@@ -42,6 +42,7 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   
   const { 
     isConnected, 
@@ -95,6 +96,20 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
 
   const isCurrentPageInSecondary = secondaryNavigation.some(item => item.key === currentPage);
 
+  // Add click outside handler for More menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-stone-50 max-w-7xl mx-auto">
       {/* Top Navbar */}
@@ -103,22 +118,25 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
 
           {/* Logo */}
           <div className="flex items-center curser-pointer space-x-3 group">
-            <Link to="/" className="flex items-center space-x-3">  
-            <div className="relative">
-              <img 
-                src="https://res.cloudinary.com/ecosheane/image/upload/v1749952368/logo_virjcs.jpg"
-                alt="AfriRemit Logo"
-                className="w-12 h-12 rounded-xl object-cover group-hover:shadow-orange-200 transition-all duration-300 group-hover:scale-105"
-              />
-              <div className="absolute -inset-1 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
-            </div>
-            
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                AfriRemit
-              </span>
-            </div>
-            </Link>
+            <button 
+              onClick={() => onPageChange('dashboard')} 
+              className="flex items-center space-x-3"
+            >  
+              <div className="relative">
+                <img 
+                  src="https://res.cloudinary.com/ecosheane/image/upload/v1749952368/logo_virjcs.jpg"
+                  alt="AfriRemit Logo"
+                  className="w-12 h-12 rounded-xl object-cover group-hover:shadow-orange-200 transition-all duration-300 group-hover:scale-105"
+                />
+                <div className="absolute -inset-1 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
+              </div>
+              
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  AfriRemit
+                </span>
+              </div>
+            </button>
           </div>
 
           {/* Desktop Navigation - Optimized */}
@@ -158,7 +176,10 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
 
               {/* More Dropdown Menu */}
               {showMoreMenu && (
-                <div className="absolute z-50 top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                <div 
+                  ref={moreMenuRef}
+                  className="absolute z-50 top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1"
+                >
                   {secondaryNavigation.map((item) => (
                     <button
                       key={item.key}

@@ -16,9 +16,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onPageChange }) => {
   return (
     <div className="min-h-screen bg-white">
       <Navbar onPageChange={onPageChange} />
-      <HeroSection />
+      <HeroSection onPageChange={onPageChange} />
       {/* <Stats /> */}
-      <Features />
+      <Features onPageChange={onPageChange} />
       <TrustedPartners />
       {/* <Testimonials /> */}
       {/* <Contact /> */}
