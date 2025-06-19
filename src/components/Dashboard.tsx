@@ -3,12 +3,13 @@ import { title } from "process";
 
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, ArrowUpRight, ArrowDownLeft, DollarSign, Copy, Eye, EyeOff, ArrowLeftRight, PiggyBank, Users, Gift, Wallet, AlertCircle } from 'lucide-react';
-import { formatEther } from 'ethers';
+import { formatEther, JsonRpcProvider } from 'ethers';
 
 import Currencies from '@/lib/Tokens/currencies';
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
 import { shortenAddress } from '@/lib/utils';
 import { roundToFiveDecimalPlaces, roundToTwoDecimalPlaces} from '@/lib/utils.ts';
+import tokens from '@/lib/Tokens/tokens';
 
 interface DashboardProps {
   onPageChange?: (page: string) => void;
@@ -18,13 +19,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [copied, setCopied] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('cNGN');
-  const { fetchBalance, address, isConnected, PRICEAPI_CONTRACT_INSTANCE } = useContractInstances();
+  const { fetchBalance, address, isConnected, PRICEAPI_CONTRACT_INSTANCE, signer, TEST_TOKEN_CONTRACT_INSTANCE, AFRISTABLE_CONTRACT_INSTANCE } = useContractInstances();
   const [bal1, setBal1] = useState<number | null>(null);
   const [usdValue, setUsdValue] = useState<number>(0);
   const [currentTokenPrice, setCurrentTokenPrice] = useState<number>(0);
   const [exchangeRates, setExchangeRates] = useState<{[key: string]: { rate: number, change: number, positive: boolean | null }}>({});
   const [livePrices, setLivePrices] = useState<{[key: string]: number}>({});
   const [initialPricesLoaded, setInitialPricesLoaded] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState<string | null>(null);
 
   const fullAddress = address;
   const walletAddress = shortenAddress(address);
@@ -195,6 +199,108 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
 
     updateUSDValue();
   }, [selectedCurrency, bal1, token1Address, isConnected]);
+
+  // Fetch recent transactions for all tokens
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!isConnected || !address) {
+        setTransactions([]);
+        setTxError(null);
+        return;
+      }
+      setTxLoading(true);
+      setTxError(null);
+      const provider = signer?.provider as JsonRpcProvider | undefined;
+      if (!provider) {
+        setTxError('No provider available from signer.');
+        setTxLoading(false);
+        return;
+      }
+      try {
+        const allTxs: any[] = [];
+        // Helper to fetch events for a token
+        const fetchTokenTxs = async (token: any) => {
+          if (!token.address) return [];
+          let contract;
+          if (token.symbol === 'AFX') {
+            console.log('Getting AFRISTABLE_CONTRACT_INSTANCE for', token.symbol, token.address);
+            contract = await AFRISTABLE_CONTRACT_INSTANCE();
+          } else {
+            console.log('Getting TEST_TOKEN_CONTRACT_INSTANCE for', token.symbol, token.address);
+            contract = await TEST_TOKEN_CONTRACT_INSTANCE(token.address);
+          }
+          if (!contract) {
+            console.warn('No contract instance for', token.symbol, token.address);
+            return [];
+          }
+          // Use provider from signer, not contract
+          const currentBlock = await provider.getBlockNumber();
+          const fromBlock = Math.max(currentBlock - 10000, 0);
+          console.log('Fetching events for', token.symbol, 'from block', fromBlock, 'to', currentBlock);
+          // Fetch Transfer events where user is sender or receiver
+          const sentEvents = await contract.queryFilter(
+            contract.filters.Transfer(address, null),
+            fromBlock,
+            currentBlock
+          );
+          const receivedEvents = await contract.queryFilter(
+            contract.filters.Transfer(null, address),
+            fromBlock,
+            currentBlock
+          );
+          console.log('Sent events:', sentEvents.length, 'Received events:', receivedEvents.length);
+          // Map and tag direction
+          const sent = sentEvents.map(e => ({
+            hash: e.transactionHash,
+            blockNumber: e.blockNumber,
+            direction: 'sent',
+            counterparty: e.args?.to,
+            amount: parseFloat(formatEther(e.args?.value)),
+            token: token.symbol,
+            timestamp: null // will fill below
+          }));
+          const received = receivedEvents.map(e => ({
+            hash: e.transactionHash,
+            blockNumber: e.blockNumber,
+            direction: 'received',
+            counterparty: e.args?.from,
+            amount: parseFloat(formatEther(e.args?.value)),
+            token: token.symbol,
+            timestamp: null
+          }));
+          return [...sent, ...received];
+        };
+        // Fetch for all tokens in parallel
+        const txArrays = await Promise.all(tokens.filter(t => t.address).map(fetchTokenTxs));
+        let txs = txArrays.flat();
+        // Fetch timestamps for each unique block
+        const blockNumbers = Array.from(new Set(txs.map(tx => tx.blockNumber)));
+        const blockTimestamps: Record<number, number> = {};
+        if (provider && typeof provider.getBlock === 'function') {
+          console.log('Fetching block timestamps for', blockNumbers.length, 'blocks');
+          await Promise.all(blockNumbers.map(async (bn) => {
+            const block = await provider.getBlock(bn);
+            blockTimestamps[bn] = block?.timestamp;
+          }));
+        }
+        txs = txs.map(tx => ({ ...tx, timestamp: blockTimestamps[tx.blockNumber] }));
+        // Sort by blockNumber desc
+        txs.sort((a, b) => b.blockNumber - a.blockNumber);
+        setTransactions(txs.slice(0, 10));
+        if (txs.length === 0) {
+          setTxError('No transactions found for your address in the last 10,000 blocks.');
+        }
+      } catch (err: any) {
+        console.error('Error fetching transactions:', err);
+        setTransactions([]);
+        setTxError('Error fetching transactions: ' + (err?.message || err));
+      } finally {
+        setTxLoading(false);
+      }
+    };
+    fetchTransactions();
+    // Only refetch when address or isConnected changes
+  }, [isConnected, address, TEST_TOKEN_CONTRACT_INSTANCE, AFRISTABLE_CONTRACT_INSTANCE, signer]);
 
   const portfolioGrowth = 5.6;
 
@@ -484,15 +590,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-8 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-800 mb-6">Recent Activity</h2>
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ArrowLeftRight className="w-8 h-8 text-slate-400" />
+        <div className="bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-3xl p-4 sm:p-8 shadow-sm">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6">Recent Activity</h2>
+          {txError && (
+            <div className="bg-red-100 text-red-700 rounded-lg px-2 sm:px-4 py-2 mb-2 sm:mb-4 text-center font-medium text-xs sm:text-base">{txError}</div>
+          )}
+          {txLoading ? (
+            <div className="flex flex-col items-center py-8 sm:py-12">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mb-3 sm:mb-4"></div>
+              <p className="text-slate-500 text-xs sm:text-base">Loading transactions...</p>
             </div>
-            <p className="text-slate-500 mb-4">No transactions yet</p>
-            <p className="text-sm text-slate-400">Your transaction history will appear here</p>
-          </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-8 sm:py-12">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <ArrowLeftRight className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
+              </div>
+              <p className="text-slate-500 mb-2 sm:mb-4 text-xs sm:text-base">No transactions yet</p>
+              <p className="text-xs sm:text-sm text-slate-400">Your transaction history will appear here</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="flex flex-col gap-3 sm:gap-0 sm:divide-y sm:divide-slate-100">
+                {transactions.map((tx, idx) => (
+                  <div
+                    key={tx.hash + idx}
+                    className="sm:flex sm:items-center sm:justify-between sm:py-4 min-w-[260px] bg-white sm:bg-transparent rounded-2xl sm:rounded-none shadow-sm sm:shadow-none px-3 py-3 sm:px-0 sm:py-0"
+                    style={{ marginBottom: '0.5rem' }}
+                  >
+                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                      <div className={`w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${tx.direction === 'sent' ? 'bg-orange-100' : 'bg-emerald-100'}`}> 
+                        {tx.direction === 'sent' ? <ArrowUpRight className="w-5 h-5 text-orange-500" /> : <ArrowDownLeft className="w-5 h-5 text-emerald-500" />}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800 text-base sm:text-base leading-tight">{tx.direction === 'sent' ? 'Sent' : 'Received'} {tx.amount} {tx.token}</span>
+                        <span className="text-xs text-slate-500 font-medium mt-1">{tx.direction === 'sent' ? 'To' : 'From'} {shortenAddress(tx.counterparty)}</span>
+                        <span className="text-[11px] text-slate-400 font-mono mt-1 block sm:hidden">{tx.hash.slice(0, 8)}...{tx.hash.slice(-4)}</span>
+                        <span className="text-[11px] text-slate-400 mt-1 block sm:hidden">{tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString() : ''}</span>
+                      </div>
+                    </div>
+                    <div className="hidden sm:block text-right w-full sm:w-auto">
+                      <div className="text-xs text-slate-400 font-mono">{tx.hash.slice(0, 8)}...{tx.hash.slice(-4)}</div>
+                      <div className="text-xs text-slate-400">{tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString() : ''}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
