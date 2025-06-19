@@ -191,7 +191,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onPageChange }) => {
                 <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                   <Users className="w-8 h-8 text-amber-600" />
                 </div>
-                <div className="text-3xl font-bold text gray-900 mb-2 group-hover:text-amber-600 transition-colors duration-300">5K+</div>
+                <div className="text-3xl font-bold text gray-900 mb-2 group-hover:text-amber-600 transition-colors duration-300">0+</div>
                 <div className="text-gray-600 text-base">Active Users</div>
               </div>
             </div>

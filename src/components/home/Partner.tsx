@@ -204,10 +204,10 @@ const TrustedPartners: React.FC = () => {
         <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-8 md:p-12 shadow-2xl border border-white/20 shadow-purple-500/10 mb-16">
           <div className="text-center mb-12">
             <h3 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Why Choose AfriRemit?
+              Why Try AfriRemit?
             </h3>
             <p className="text-xl text-gray-600 leading-relaxed">
-              Built with trust, security, and innovation at the core
+              We are building a new platform for cross-border payments and digital assets in Africa. Join us on our journey!
             </p>
           </div>
 
