@@ -113,7 +113,8 @@ const getAvailableTokens = (selectedToken, isFromToken = true) => {
 };
 
 // Handle token selection with automatic switching
-const handleFromTokenChange = (newFromToken) => {
+const handleFromTokenChange = (event) => {
+  const newFromToken = event.target.value;
   setFromToken(newFromToken);
   
   // Get available tokens for the new from token
@@ -128,7 +129,8 @@ const handleFromTokenChange = (newFromToken) => {
 };
 
 
-const handleToTokenChange = (newToToken) => {
+const handleToTokenChange = (event) => {
+  const newToToken = event.target.value;
   setToToken(newToToken);
   // No need to change fromToken as it can be any token
 };
@@ -146,15 +148,15 @@ useEffect(()=>{
       
       setBal1(roundedBal1)
       setBal2(roundedBal2)
-      const PRICE_CONTRACT= await PRICEAPI_CONTRACT_INSTANCE();
-    
-  
       
-      const dollarRate= await PRICE_CONTRACT.getLatestPrice(token1Address);
-     
-      const formattedDollarRate= ethers.formatEther(dollarRate)
-    
-      setDollarRate(formattedDollarRate)
+      const PRICE_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
+      
+      // Add null check for PRICE_CONTRACT
+      if (PRICE_CONTRACT && token1Address) {
+        const dollarRate = await PRICE_CONTRACT.getLatestPrice(token1Address);
+        const formattedDollarRate = ethers.formatEther(dollarRate);
+        setDollarRate(formattedDollarRate);
+      }
 
     } catch (error) {
       console.error(error);
@@ -189,19 +191,23 @@ useEffect(()=>{
       setEstimatedAmount2(true);
       const PRICE_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
       
-      const TokenAmountInWei: any = ethers.parseEther(token1Amount);
-
+      // Add null check for PRICE_CONTRACT
+      if (!PRICE_CONTRACT) {
+        console.error('Price contract not available');
+        setEstimatedAmount2(false);
+        return;
+      }
       
-     
+      const TokenAmountInWei = ethers.parseEther(token1Amount);
+
       try {
         const rate = await PRICE_CONTRACT.estimate(
           token1Address,
           token2Address,
           TokenAmountInWei
-         
         );
       
-        const f_rate:any = ethers.formatEther(rate);
+        const f_rate: any = ethers.formatEther(rate);
 
         const swapFee = (20 / 1000) * f_rate;
       
@@ -210,7 +216,7 @@ useEffect(()=>{
         const roundedAmount = parseFloat(amountTwoToReceive.toFixed(9));
         
         setToken2Amount(roundedAmount);
-        setAmountOneInWei(TokenAmountInWei);
+        setAmountOneInWei(TokenAmountInWei.toString());
         ///======  ESTIMATING TWO TO ONE =====//
         
         const Amount2InWei= ethers.parseEther("1");
@@ -224,15 +230,8 @@ useEffect(()=>{
 
         setBaseTwoRate(formattedTwoRate)
         
-        setAmountTwoRate(rateToExchangeTwotoOne);
+        setAmountTwoRate(rateToExchangeTwotoOne.toString());
         
-       
-       
-       
-        
-       
-        
-
       } catch (error) {
         console.error(error);
         setToken2Amount(null);
@@ -381,8 +380,9 @@ useEffect(()=>{
     return (parseFloat(amount) * rate).toFixed(6);
   };
 
-  const handleFromAmountChange = () => {
-   setToken1Amount(Bal1)
+  const handleFromAmountChange = (event) => {
+    const value = event.target.value;
+    setToken1Amount(value);
   };
 
   const swapTokens = () => {
@@ -535,7 +535,7 @@ useEffect(()=>{
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <input
               type="number"
-              value={fromAmount}
+              value={token1Amount || ''}
               onChange={handleFromAmountChange}
               placeholder="0.0"
               className="w-full sm:w-24 text-2xl font-semibold bg-transparent border-none outline-none"
@@ -594,7 +594,7 @@ useEffect(()=>{
               />
               <select
                 value={toToken}
-                onChange={(e) => handleToTokenChange(e.target.value)}
+                onChange={handleToTokenChange}
                 className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium w-full sm:w-auto min-w-[120px] text-base"
               >
                 <option value="">Select token</option>

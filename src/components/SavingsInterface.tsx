@@ -5,6 +5,7 @@ import tokens from '@/lib/Tokens/tokens';
 
 
 const AjoEsusuInterface = () => {
+  // All state declarations at the top
   const [contributionAmount, setContributionAmount] = useState('');
   const [groupSize, setGroupSize] = useState(5);
   const [frequency, setFrequency] = useState('weekly');
@@ -18,10 +19,11 @@ const AjoEsusuInterface = () => {
   const [inviteCode, setInviteCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAgent, setIsAgent] = useState(false);
-const [agentContactInfo, setAgentContactInfo] = useState('');
-const [showAgentRegistration, setShowAgentRegistration] = useState(false);
+  const [agentContactInfo, setAgentContactInfo] = useState('');
+  const [showAgentRegistration, setShowAgentRegistration] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [expandedGroupRef, setExpandedGroupRef] = useState<HTMLDivElement | null>(null);
 
-  
   // Contract state
   const [userInfo, setUserInfo] = useState(null);
   const [myGroups, setMyGroups] = useState([]);
@@ -32,12 +34,11 @@ const [showAgentRegistration, setShowAgentRegistration] = useState(false);
   const [userName, setUserName] = useState('');
 
   const [showInviteModal, setShowInviteModal] = useState(false);
-const [selectedGroupId, setSelectedGroupId] = useState(null);
-const [maxUses, setMaxUses] = useState(10);
-const [validityDays, setValidityDays] = useState(30);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [maxUses, setMaxUses] = useState(10);
+  const [validityDays, setValidityDays] = useState(30);
 
-  
-  const { isConnected, SAVING_CONTRACT_INSTANCE, TEST_TOKEN_CONTRACT_INSTANCE,AFRISTABLE_CONTRACT_INSTANCE, address } = useContractInstances();
+  const { isConnected, SAVING_CONTRACT_INSTANCE, TEST_TOKEN_CONTRACT_INSTANCE, AFRISTABLE_CONTRACT_INSTANCE, address } = useContractInstances();
 
   const frequencyOptions = [
     {value: 'five minute', label: 'Five-minute', seconds: 300 },
@@ -79,88 +80,108 @@ const [validityDays, setValidityDays] = useState(30);
     return `${days}d ${hours}h ${minutes}m`;
   };
 
-  // Initialize contract data
+  // All useEffect hooks together
   useEffect(() => {
     if (isConnected && address) {
       initializeData();
     }
   }, [isConnected, address]);
 
-const initializeData = async () => {
-  setIsLoading(true);
-  try {
-    const Saving_Contract = await SAVING_CONTRACT_INSTANCE();
-    
-    // Check if user is registered
-    const registered = await Saving_Contract.isUserRegistered(address);
-    setIsRegistered(registered);
-    
-    if (registered) {
-      // Check if user is an agent
-      const agentStatus = await Saving_Contract.isAjoAgent(address);
-      setIsAgent(agentStatus);
-      
-      // Get user info
-      const userMemberInfo = await Saving_Contract.getMemberInfo(address);
-      console.log('userMemberInfo', userMemberInfo);
-      setUserInfo(userMemberInfo);
-      
-      const name = await Saving_Contract.getUserName(address);
-      setUserName(name);
-      
-      // Get user's groups
-      const userGroupIds = await Saving_Contract.getUserGroups(address);
-      const userGroupsData = await Promise.all(
-        userGroupIds.map(async (groupId) => {
-          const summary = await Saving_Contract.getGroupSummary(groupId);
-          console.log('summarry',summary)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (expandedGroupRef && !expandedGroupRef.contains(event.target as Node)) {
+        setExpandedGroup(null);
+      }
+    };
 
-          const savingInfo= await Saving_Contract.savingsGroups(groupId);
-          console.log('savingInfo',savingInfo)
-          const contributionStatus = await Saving_Contract.getUserContributionStatus(groupId, address);
-          
-          // Get invite code for groups created by the user
-          let inviteCode = "";
-          if (summary[2] === address) {
-            try {
-              inviteCode = await Saving_Contract.groupInviteCode(groupId);
-            } catch (error) {
-              console.log(`No invite code for group ${groupId}`);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [expandedGroupRef]);
+
+  const initializeData = async () => {
+    setIsLoading(true);
+    try {
+      const Saving_Contract = await SAVING_CONTRACT_INSTANCE();
+      
+      // Check if user is registered
+      const registered = await Saving_Contract.isUserRegistered(address);
+      setIsRegistered(registered);
+      
+      if (registered) {
+        // Check if user is an agent
+        const agentStatus = await Saving_Contract.isAjoAgent(address);
+        setIsAgent(agentStatus);
+        
+        // Get user info
+        const userMemberInfo = await Saving_Contract.getMemberInfo(address);
+        console.log('userMemberInfo', userMemberInfo);
+        setUserInfo(userMemberInfo);
+        
+        const name = await Saving_Contract.getUserName(address);
+        setUserName(name);
+        
+        // Get user's groups
+        const userGroupIds = await Saving_Contract.getUserGroups(address);
+        const userGroupsData = await Promise.all(
+          userGroupIds.map(async (groupId) => {
+            const summary = await Saving_Contract.getGroupSummary(groupId);
+            console.log('summarry',summary)
+
+            const savingInfo= await Saving_Contract.savingsGroups(groupId);
+            console.log('savingInfo',savingInfo)
+            const contributionStatus = await Saving_Contract.getUserContributionStatus(groupId, address);
+            
+            // Get invite code for groups created by the user
+            let inviteCode = "";
+            if (summary[2] === address) {
+              try {
+                inviteCode = await Saving_Contract.groupInviteCode(groupId);
+              } catch (error) {
+                console.log(`No invite code for group ${groupId}`);
+              }
             }
-          }
-          
-          return { 
-            ...summary, 
-            contributionStatus,
-            inviteCode 
-          };
-        })
-      );
-      setMyGroups(userGroupsData);
+            
+            return { 
+              ...summary, 
+              contributionStatus,
+              inviteCode 
+            };
+          })
+        );
+        setMyGroups(userGroupsData);
+      }
+      
+      // Get available groups
+      const joinableGroups = await Saving_Contract.getJoinableGroups();
+      setAvailableGroups(joinableGroups);
+      
+      // Get supported tokens
+      const tokenData = await Saving_Contract.getSupportedTokens();
+      setSupportedTokens(tokenData);
+      
+      // Get total stats
+      const stats = await Saving_Contract.getTotalStats();
+      console.log('total stats', stats)
+      setTotalStats(stats);
+      
+      // Set supported tokens for UI
+      setSelectedToken(getSupportedTokens()[0]?.address || '');
+      
+    } catch (error) {
+      console.error('Error initializing data:', error);
+      // Check if the error is because user is already registered
+      if (error.reason === "Already Registered") {
+        setIsRegistered(true);
+        // Try to fetch data again since user is actually registered
+        initializeData();
+      } else {
+        setErrorMessage('Failed to load contract data');
+      }
     }
-    
-    // Get available groups
-    const joinableGroups = await Saving_Contract.getJoinableGroups();
-    setAvailableGroups(joinableGroups);
-    
-    // Get supported tokens
-    const tokenData = await Saving_Contract.getSupportedTokens();
-    setSupportedTokens(tokenData);
-    
-    // Get total stats
-    const stats = await Saving_Contract.getTotalStats();
-    console.log('total stats', stats)
-    setTotalStats(stats);
-    
-    // Set supported tokens for UI
-    setSelectedToken(getSupportedTokens()[0]?.address || '');
-    
-  } catch (error) {
-    console.error('Error initializing data:', error);
-    setErrorMessage('Failed to load contract data');
-  }
-  setIsLoading(false);
-};
+    setIsLoading(false);
+  };
 
   const handleRegisterUser = async () => {
     if (!userName.trim()) return;
@@ -168,6 +189,16 @@ const initializeData = async () => {
     setIsProcessing(true);
     try {
       const Saving_Contract = await SAVING_CONTRACT_INSTANCE();
+      
+      // First check if user is already registered
+      const isUserRegistered = await Saving_Contract.isUserRegistered(address);
+      if (isUserRegistered) {
+        setIsRegistered(true);
+        setSuccessMessage('You are already registered! Welcome back to AfriRemit Ajo/Esusu.');
+        initializeData(); // Refresh data
+        return;
+      }
+      
       const tx = await Saving_Contract.registerUser(userName);
       await tx.wait();
       
@@ -176,7 +207,14 @@ const initializeData = async () => {
       initializeData(); // Refresh data
     } catch (error) {
       console.error('Registration error:', error);
-      setErrorMessage('Failed to register user');
+      // Check if the error is because user is already registered
+      if (error.reason === "Already Registered") {
+        setIsRegistered(true);
+        setSuccessMessage('You are already registered! Welcome back to AfriRemit Ajo/Esusu.');
+        initializeData(); // Refresh data
+      } else {
+        setErrorMessage('Failed to register user');
+      }
     }
     setIsProcessing(false);
   };
@@ -534,23 +572,6 @@ const handleCopyInviteCode = async (inviteCode) => {
   </div>
     );
   }
-
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
-  const [expandedGroupRef, setExpandedGroupRef] = useState<HTMLDivElement | null>(null);
-
-  // Add click outside handler
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (expandedGroupRef && !expandedGroupRef.contains(event.target as Node)) {
-        setExpandedGroup(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [expandedGroupRef]);
 
   return (
     <>
