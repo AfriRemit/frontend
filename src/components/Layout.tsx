@@ -24,12 +24,15 @@ import {
   AlertTriangle,
   MoreHorizontal,
   ChevronDown,
-  MessageCircle
+  MessageCircle,
+  ArrowUpRight
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
 import { Link } from 'react-router-dom';
 import AIChatModal from '../components/AI/Chat';
+import tokens from '@/lib/Tokens/tokens';
+import { formatEther, JsonRpcProvider } from 'ethers';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -50,6 +53,9 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
     isCorrectNetwork,
     networkError,
     connectionError,
+    signer,
+    TEST_TOKEN_CONTRACT_INSTANCE,
+    AFRISTABLE_CONTRACT_INSTANCE
   } = useContractInstances();
 
   // Create Thirdweb client
@@ -76,12 +82,91 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
   // All navigation items for mobile
   const allNavigation = [...primaryNavigation, ...secondaryNavigation];
 
-  const notifications = [
-  //   { id: 1, title: 'Transfer Completed', message: 'Your transfer to John Doe has been completed successfully.', time: '2 hours ago', unread: true },
-  //   { id: 2, title: 'Savings Milestone', message: 'Congratulations! You\'ve reached your savings goal.', time: '1 day ago', unread: true },
-  //   { id: 3, title: 'Family Transfer', message: 'Scheduled transfer to Mama Adunni processed.', time: '2 days ago', unread: false }
-  // ];
-  ]
+  const [txNotifications, setTxNotifications] = useState<any[]>([]);
+  const [txNotifBadge, setTxNotifBadge] = useState(false);
+
+  // Fetch recent transactions for notifications
+  useEffect(() => {
+    const fetchTxNotifs = async () => {
+      if (!isConnected || !address || !signer) {
+        setTxNotifications([]);
+        setTxNotifBadge(false);
+        return;
+      }
+      const provider = signer.provider as JsonRpcProvider | undefined;
+      if (!provider) return;
+      try {
+        const fetchTokenTxs = async (token: any) => {
+          if (!token.address) return [];
+          let contract;
+          if (token.symbol === 'AFX') {
+            contract = await AFRISTABLE_CONTRACT_INSTANCE();
+          } else {
+            contract = await TEST_TOKEN_CONTRACT_INSTANCE(token.address);
+          }
+          if (!contract) return [];
+          const currentBlock = await provider.getBlockNumber();
+          const fromBlock = Math.max(currentBlock - 10000, 0);
+          const sentEvents = await contract.queryFilter(
+            contract.filters.Transfer(address, null),
+            fromBlock,
+            currentBlock
+          );
+          const receivedEvents = await contract.queryFilter(
+            contract.filters.Transfer(null, address),
+            fromBlock,
+            currentBlock
+          );
+          const sent = sentEvents.map(e => ({
+            hash: e.transactionHash,
+            blockNumber: e.blockNumber,
+            direction: 'sent',
+            counterparty: e.args?.to,
+            amount: parseFloat(formatEther(e.args?.value)),
+            token: token.symbol,
+            timestamp: null
+          }));
+          const received = receivedEvents.map(e => ({
+            hash: e.transactionHash,
+            blockNumber: e.blockNumber,
+            direction: 'received',
+            counterparty: e.args?.from,
+            amount: parseFloat(formatEther(e.args?.value)),
+            token: token.symbol,
+            timestamp: null
+          }));
+          return [...sent, ...received];
+        };
+        const txArrays = await Promise.all(tokens.filter(t => t.address).map(fetchTokenTxs));
+        let txs = txArrays.flat();
+        // Fetch timestamps for each unique block
+        const blockNumbers = Array.from(new Set(txs.map(tx => tx.blockNumber)));
+        const blockTimestamps: Record<number, number> = {};
+        if (provider && typeof provider.getBlock === 'function') {
+          await Promise.all(blockNumbers.map(async (bn) => {
+            const block = await provider.getBlock(bn);
+            blockTimestamps[bn] = block?.timestamp;
+          }));
+        }
+        txs = txs.map(tx => ({ ...tx, timestamp: blockTimestamps[tx.blockNumber] }));
+        txs.sort((a, b) => b.blockNumber - a.blockNumber);
+        setTxNotifications(txs.slice(0, 3));
+        setTxNotifBadge(txs.length > 0);
+      } catch (err) {
+        setTxNotifications([]);
+        setTxNotifBadge(false);
+      }
+    };
+    fetchTxNotifs();
+    // Poll every 15s
+    const interval = setInterval(fetchTxNotifs, 15000);
+    return () => clearInterval(interval);
+  }, [isConnected, address, signer, TEST_TOKEN_CONTRACT_INSTANCE, AFRISTABLE_CONTRACT_INSTANCE]);
+
+  // Hide badge when dropdown is opened
+  useEffect(() => {
+    if (showNotifications) setTxNotifBadge(false);
+  }, [showNotifications]);
 
   // Format address for display
   const formatAddress = (addr: string) => {
@@ -233,47 +318,42 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                 className="p-2 rounded-lg hover:bg-stone-100 transition-colors relative"
               >
                 <Bell className="w-5 h-5 text-stone-700" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                {txNotifBadge && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>}
               </button>
 
               {/* Notifications Dropdown */}
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-stone-200 z-50">
                   <div className="p-4 border-b border-stone-200">
-                    <h3 className="font-semibold text-stone-800">Notifications</h3>
+                    <h3 className="font-semibold text-stone-800">Recent Transactions</h3>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div key={notification.id} className={`p-4 border-b border-stone-100 hover:bg-stone-50 ${notification.unread ? 'bg-blue-50' : ''}`}>
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-stone-800 text-sm">{notification.title}</h4>
-                            <p className="text-stone-600 text-sm mt-1">{notification.message}</p>
-                            <p className="text-stone-500 text-xs mt-2">{notification.time}</p>
+                    {txNotifications.length === 0 ? (
+                      <div className="p-6 text-center text-slate-400 text-sm">No recent transactions</div>
+                    ) : (
+                      txNotifications.map((tx, idx) => (
+                        <div key={tx.hash + idx} className="flex items-center gap-3 bg-slate-50 rounded-xl p-4 m-2 shadow-sm">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${tx.direction === 'sent' ? 'bg-orange-100' : 'bg-emerald-100'}`}> 
+                            {tx.direction === 'sent' ? <ArrowUpRight className="w-5 h-5 text-orange-500" /> : <ArrowDownLeft className="w-5 h-5 text-emerald-500" />}
                           </div>
-                          {notification.unread && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
-                          )}
+                          <div className="flex-1">
+                            <div className="font-semibold text-slate-800 text-sm">{tx.direction === 'sent' ? 'Sent' : 'Received'} {tx.amount} {tx.token}</div>
+                            <div className="text-xs text-slate-500">{tx.direction === 'sent' ? 'To' : 'From'} {tx.counterparty?.slice ? tx.counterparty.slice(0, 6) + '...' + tx.counterparty.slice(-4) : ''}</div>
+                            <div className="text-[11px] text-slate-400 font-mono">{tx.hash.slice(0, 8)}...{tx.hash.slice(-4)}</div>
+                            <div className="text-[11px] text-slate-400">{tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString() : ''}</div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                   <div className="p-3 text-center border-t border-stone-200">
                     <button className="text-terracotta text-sm font-medium hover:text-terracotta/80">
-                      View All Notifications
+                      View All Transactions
                     </button>
                   </div>
                 </div>
               )}
-          </div>
-
-            {/* Settings */}
-            <button
-              onClick={() => onPageChange('profile')}
-              className="p-2 rounded-lg hover:bg-stone-100 transition-colors"
-            >
-              <Settings className="w-5 h-5 text-stone-700" />
-            </button>
+            </div>
 
             {/* Thirdweb Connect Button */}
             <ConnectButton 
@@ -384,16 +464,6 @@ const Layout = ({ children, currentPage, onPageChange }: LayoutProps) => {
                       <Bell className="w-5 h-5" />
                       <span>Notifications</span>
                       <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        onPageChange('profile');
-                        setSidebarOpen(false);
-                      }}
-                      className="flex items-center space-x-3 w-full px-4 py-3 text-stone-700 hover:bg-stone-100 rounded-lg"
-                    >
-                      <Settings className="w-5 h-5" />
-                      <span>Settings</span>
                     </button>
                   </div>
                 </div>

@@ -76,7 +76,7 @@ const TrustedPartners: React.FC = () => {
 
   const achievements = [
     {
-      icon: Shield,
+      icon: () => <img src="https://cryptologos.cc/logos/chainlink-link-logo.png" alt="Chainlink" className="w-10 h-10 object-contain" />,
       title: "Security Audited",
       description: "Smart contracts audited by leading blockchain security firms",
       color: "text-emerald-600",
@@ -84,7 +84,7 @@ const TrustedPartners: React.FC = () => {
       gradient: "from-emerald-400 to-teal-500"
     },
     {
-      icon: Award,
+      icon: () => <img src="https://paystack.com/assets/img/logos/paystack-icon-colored.svg" alt="Paystack" className="w-10 h-10 object-contain" />,
       title: "Award Winning",
       description: "Recognized for innovation in African fintech solutions",
       color: "text-blue-600",
@@ -92,7 +92,7 @@ const TrustedPartners: React.FC = () => {
       gradient: "from-blue-400 to-cyan-500"
     },
     {
-      icon: Globe,
+      icon: () => <img src="https://cryptologos.cc/logos/lisk-lsk-logo.png" alt="Lisk" className="w-10 h-10 object-contain" />,
       title: "Global Reach",
       description: "Serving users across multiple African countries",
       color: "text-purple-600",
@@ -100,7 +100,7 @@ const TrustedPartners: React.FC = () => {
       gradient: "from-purple-400 to-pink-500"
     },
     {
-      icon: TrendingUp,
+      icon: () => <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="Binance" className="w-10 h-10 object-contain" />,
       title: "Growing Fast",
       description: "Rapid adoption and expanding user base",
       color: "text-orange-600",
@@ -218,7 +218,7 @@ const TrustedPartners: React.FC = () => {
                 className="text-center group"
               >
                 <div className={`w-20 h-20 bg-gradient-to-r ${achievement.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-all duration-300  hover:shadow-xl`}>
-                  <achievement.icon className="w-10 h-10 text-white" />
+                  {achievement.icon()}
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 mb-3">{achievement.title}</h4>
                 <p className="text-gray-600 leading-relaxed">{achievement.description}</p>
