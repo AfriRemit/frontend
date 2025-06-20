@@ -443,7 +443,7 @@ const AIChatModal = ({ isOpen, onClose, context = 'general' }) => {
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKeyPress}
                         placeholder={isConfigured() ? "Talk blockchain..." : "Configure API key to use AI assistant"}
-                        className="w-full resize-none rounded-xl bg-transparent border border-stone-300 px-6 py-4 pr-10 text-sm placeholder-stone-500 focus:outline-none focus:ring-0 disabled:bg-transparent disabled:cursor-not-allowed"
+                        className="w-full resize-none rounded-xl bg-transparent border border-stone-300 px-6 py-4 pr-10 text-sm placeholder-stone-500 focus:outline-none focus:ring-0 disabled:bg-transparent disabled:cursor-not-allowed overflow-x-hidden"
                         rows={1}
                         style={{
                           minHeight: '32px',
