@@ -13,9 +13,7 @@ const FamilyTransfers = () => {
   });
 
   const paymentMethods = [
-    { id: 'bank1', name: 'First Bank Nigeria', type: 'bank', details: '****1234' },
-    { id: 'mobile1', name: 'MTN Mobile Money', type: 'mobile', details: '+234 *** *** **90' },
-    { id: 'wallet1', name: 'Ethereum Wallet', type: 'wallet', details: '0x...abc123' }
+   
   ];
 
   const scheduledTransfers = [
