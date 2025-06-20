@@ -211,7 +211,7 @@ const AIChatModal = ({ isOpen, onClose, context = 'general' }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6 pointer-events-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
       {/* Background overlay */}
       <div 
         className="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto"
@@ -230,56 +230,53 @@ const AIChatModal = ({ isOpen, onClose, context = 'general' }) => {
         <div 
           ref={nodeRef}
           className={cn(
-            "relative bg-white rounded-2xl shadow-2xl border border-stone-200 transition-all duration-300 ease-out flex flex-col pointer-events-auto",
+            "relative bg-white rounded-2xl rounded-b-2xl shadow-2xl border border-stone-200 transition-all duration-300 ease-out flex flex-col pointer-events-auto",
             isMinimized 
               ? "w-64 h-14" 
-              : "w-[calc(100%-2rem)] sm:w-80 h-[450px] sm:h-[500px]"
+              : "w-[90vw] max-w-4xl h-[350px] sm:h-[400px]"
           )}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          {(isMinimized || messages.length <= 1) && (
-            <div className="drag-handle flex-shrink-0 flex items-center justify-between p-4 border-b border-stone-200 bg-gradient-to-r from-orange-500 to-green-500 rounded-t-2xl cursor-move">
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
-                    <Bot className="w-5 h-5 text-orange-500" />
-                  </div>
-                  <div className={cn(
-                    "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white",
-                    isConfigured() ? "bg-green-500" : "bg-red-500"
-                  )}></div>
+          <div className="drag-handle flex-shrink-0 flex items-center justify-between p-4 border-b border-stone-200 bg-white rounded-t-2xl cursor-move">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <Bot className="w-5 h-5 text-orange-500" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white">AfriRemit AI</h3>
-                  <p className="text-xs text-white/80">
-                    {isConfigured() ? "Blockchain & DeFi Expert" : "Configuration needed"}
-                  </p>
-                </div>
+                <div className={cn(
+                  "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white",
+                  isConfigured() ? "bg-green-500" : "bg-red-500"
+                )}></div>
               </div>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setIsMinimized(!isMinimized)}
-                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
-                  title={isMinimized ? "Maximize" : "Minimize"}
-                >
-                  {isMinimized ? (
-                    <Maximize2 className="w-4 h-4 text-white" />
-                  ) : (
-                    <Minimize2 className="w-4 h-4 text-white" />
-                  )}
-                </button>
-                <button
-                  onClick={onClose}
-                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
-                  title="Close"
-                >
-                  <X className="w-4 h-4 text-white" />
-                </button>
+              <div>
+                <h3 className="font-semibold text-stone-900">AfriRemit AI</h3>
+                <p className="text-xs text-stone-500">
+                  {isConfigured() ? "Blockchain & DeFi Expert" : "Configuration needed"}
+                </p>
               </div>
             </div>
-          )}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                title={isMinimized ? "Maximize" : "Minimize"}
+              >
+                {isMinimized ? (
+                  <Maximize2 className="w-4 h-4 text-stone-500" />
+                ) : (
+                  <Minimize2 className="w-4 h-4 text-stone-500" />
+                )}
+              </button>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                title="Close"
+              >
+                <X className="w-4 h-4 text-stone-500" />
+              </button>
+            </div>
+          </div>
 
           {!isMinimized && (
             <div className="flex flex-col h-full">
@@ -370,68 +367,66 @@ const AIChatModal = ({ isOpen, onClose, context = 'general' }) => {
 
                       {/* Message Content */}
                       <div className={cn(
-                        "flex-1 max-w-[280px]",
-                        message.isUser ? "flex flex-col items-end" : ""
+                        "relative px-4 py-3 rounded-2xl" +
+                        (message.isUser
+                          ? " bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-br-md shadow-sm"
+                          : " text-stone-900 w-full")
                       )}>
-                        <div className={cn(
-                          "relative px-4 py-3 rounded-2xl shadow-sm",
-                          message.isUser
-                            ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-br-md"
-                            : "bg-white border border-stone-200 text-stone-900 rounded-bl-md"
-                        )}>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                            <ReactMarkdown
-                              components={{
-                                h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2" {...props} />,
-                                h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2" {...props} />,
-                                h3: ({node, ...props}) => <h3 className="text-sm font-bold mb-1" {...props} />,
-                                p: ({node, ...props}) => <p className="mb-2" {...props} />,
-                                ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2" {...props} />,
-                                ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2" {...props} />,
-                                li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                                code: ({node, inline, ...props}: {node?: any; inline?: boolean; [key: string]: any}) => 
-                                  inline ? 
-                                    <code className="bg-stone-100 px-1 py-0.5 rounded text-sm" {...props} /> :
-                                    <code className="block bg-stone-100 p-2 rounded text-sm mb-2" {...props} />,
-                                pre: ({node, ...props}) => <pre className="bg-stone-100 p-2 rounded text-sm mb-2 overflow-x-auto" {...props} />,
-                                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-stone-300 pl-4 italic mb-2" {...props} />,
-                                a: ({node, ...props}) => <a className="text-blue-600 hover:underline" {...props} />,
-                              }}
-                            >
-                              {message.text}
-                            </ReactMarkdown>
-                          </p>
-                          
-                          {/* Copy button */}
-                          <button
-                            onClick={() => copyMessage(message.text, message.id)}
-                            className={cn(
-                              "absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity",
-                              message.isUser
-                                ? "hover:bg-white/20"
-                                : "hover:bg-stone-100"
-                            )}
-                            title="Copy message"
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          <ReactMarkdown
+                            components={{
+                              h1: (props) => <h1 className="text-lg font-bold mb-1" {...props} />,
+                              h2: (props) => <h2 className="text-base font-bold mb-1" {...props} />,
+                              h3: (props) => <h3 className="text-sm font-bold mb-0.5" {...props} />,
+                              p: (props) => <p className="mb-1 last:mb-0" style={{marginBottom: 0}} {...props} />,
+                              ul: (props) => <ul className="list-disc pl-4 mb-1 last:mb-0" {...props} />,
+                              ol: (props) => <ol className="list-decimal pl-4 mb-1 last:mb-0" style={{paddingLeft: '1.25rem'}} {...props} />,
+                              li: (props) => <li className="mb-0.5 last:mb-0 flex items-center" style={{marginBottom: 0}} {...props} />,
+                              code: ({inline, ...props}: {inline?: boolean; [key: string]: any}) => 
+                                inline ? 
+                                  <code className="bg-stone-100 px-1 py-0.5 rounded text-sm" {...props} /> :
+                                  <code className="block bg-stone-100 p-2 rounded text-sm mb-1 overflow-x-auto" {...props} />,
+                              pre: (props) => <pre className="bg-stone-100 p-2 rounded text-sm mb-1 overflow-x-auto" {...props} />,
+                              blockquote: (props) => <blockquote className="border-l-4 border-stone-300 pl-4 italic mb-1 last:mb-0" {...props} />,
+                              a: (props) => <a className="text-blue-600 hover:underline" {...props} />,
+                            }}
                           >
-                            {copiedId === message.id ? (
-                              <CheckCircle className={cn(
-                                "w-3 h-3",
-                                message.isUser ? "text-white" : "text-green-600"
-                              )} />
-                            ) : (
-                              <Copy className={cn(
-                                "w-3 h-3",
-                                message.isUser ? "text-white/80" : "text-stone-500"
-                              )} />
-                            )}
-                          </button>
-                        </div>
+                            {message.text}
+                          </ReactMarkdown>
+                        </p>
                         
-                        {/* Timestamp */}
-                        <span className="text-xs text-stone-500 mt-1">
-                          {formatTime(message.timestamp)}
-                        </span>
+                        {/* Copy button */}
+                        <button
+                          onClick={() => copyMessage(message.text, message.id)}
+                          className={cn(
+                            "absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity",
+                            message.isUser
+                              ? "hover:bg-white/20"
+                              : "hover:bg-stone-100"
+                          )}
+                          title="Copy message"
+                        >
+                          {copiedId === message.id ? (
+                            <CheckCircle className={cn(
+                              "w-3 h-3",
+                              message.isUser ? "text-white" : "text-green-600"
+                            )} />
+                          ) : (
+                            <Copy className={cn(
+                              "w-3 h-3",
+                              message.isUser ? "text-white/80" : "text-stone-500"
+                            )} />
+                          )}
+                        </button>
                       </div>
+                      
+                      {/* Timestamp */}
+                      <span className={cn(
+                        "text-xs text-stone-500 mt-1",
+                        message.isUser ? "self-end" : "self-start"
+                      )}>
+                        {formatTime(message.timestamp)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -439,49 +434,49 @@ const AIChatModal = ({ isOpen, onClose, context = 'general' }) => {
 
               {/* Input Area */}
               <div className="flex-shrink-0 p-3 border-t border-stone-200 bg-white">
-                <div className="flex items-end space-x-3">
-                  <div className="flex-1 relative">
-                    <textarea
-                      ref={inputRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                      placeholder={isConfigured() ? "Talk blockchain..." : "Configure API key to use AI assistant"}
-                      className="w-full resize-none rounded-xl border border-stone-300 px-4 py-3 pr-12 text-sm placeholder-stone-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-colors disabled:bg-stone-100 disabled:cursor-not-allowed"
-                      rows={1}
-                      style={{
-                        minHeight: '44px',
-                        maxHeight: '120px'
-                      }}
-                      disabled={!isConfigured()}
-                    />
-                    
-                    {/* AI Sparkle Icon */}
-                    <div className="absolute right-3 top-3">
-                      <Sparkles className={cn(
-                        "w-4 h-4",
-                        isConfigured() ? "text-stone-400" : "text-stone-300"
-                      )} />
+                <div className="flex justify-center">
+                  <div className="flex w-full max-w-md items-end space-x-2">
+                    <div className="relative flex-1 flex items-center">
+                      <textarea
+                        ref={inputRef}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder={isConfigured() ? "Talk blockchain..." : "Configure API key to use AI assistant"}
+                        className="w-full resize-none rounded-xl bg-transparent border border-stone-300 px-6 py-4 pr-10 text-sm placeholder-stone-500 focus:outline-none focus:ring-0 disabled:bg-transparent disabled:cursor-not-allowed"
+                        rows={1}
+                        style={{
+                          minHeight: '32px',
+                          maxHeight: '80px'
+                        }}
+                        disabled={!isConfigured()}
+                      />
+                      {/* AI Sparkle Icon */}
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <Sparkles className={cn(
+                          "w-4 h-4",
+                          isConfigured() ? "text-stone-400" : "text-stone-300"
+                        )} />
+                      </div>
                     </div>
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!inputValue.trim() || isLoading || !isConfigured()}
+                      className={cn(
+                        "p-3 rounded-xl transition-all duration-200",
+                        inputValue.trim() && !isLoading && isConfigured()
+                          ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+                          : "bg-stone-200 text-stone-400 cursor-not-allowed"
+                      )}
+                      title="Send message"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Send className="w-5 h-5" />
+                      )}
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isLoading || !isConfigured()}
-                    className={cn(
-                      "p-3 rounded-xl transition-all duration-200",
-                      inputValue.trim() && !isLoading && isConfigured()
-                        ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
-                        : "bg-stone-200 text-stone-400 cursor-not-allowed"
-                    )}
-                    title="Send message"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Send className="w-5 h-5" />
-                    )}
-                  </button>
                 </div>
                 
                 {/* Disclaimer */}
