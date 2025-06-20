@@ -8,30 +8,7 @@ const WithdrawalInterface = () => {
   const [selectedCurrency, setSelectedCurrency] = useState('cNGN');
 
   const withdrawalMethods = [
-    {
-      id: 'bank',
-      name: 'Bank Transfer',
-      icon: Banknote,
-      description: 'Direct to your bank account',
-      fee: '1.5%',
-      time: '1-3 business days'
-    },
-    {
-      id: 'card',
-      name: 'Debit Card',
-      icon: CreditCard,
-      description: 'Instant to your card',
-      fee: '2.5%',
-      time: 'Instant'
-    },
-    {
-      id: 'mobile',
-      name: 'Mobile Money',
-      icon: Smartphone,
-      description: 'M-Pesa, Airtel Money, etc.',
-      fee: '1.0%',
-      time: '5-10 minutes'
-    }
+    // 
   ];
 
   const recentWithdrawals = [
