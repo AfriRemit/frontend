@@ -348,6 +348,7 @@ const handlePayment = async () => {
   const validationError = validateInputs();
   if (validationError) {
     alert(validationError);
+    
     return;
   }
 
@@ -372,7 +373,7 @@ const handlePayment = async () => {
   }
 };
 
-const transferTokens = async (tokenAddress, amount, recipientAddress) => {
+const transferTokens = async (tokenAddress, amount) => {
   try {
     setIsProcessing(true);
     
@@ -383,7 +384,7 @@ const transferTokens = async (tokenAddress, amount, recipientAddress) => {
     }
     
     const TOKEN_CONTRACT = await TEST_TOKEN_CONTRACT_INSTANCE(tokenAddress);
-    const TRANSFER = await TOKEN_CONTRACT.transfer(address, amount);
+    const TRANSFER = await TOKEN_CONTRACT.transfer(tokenAddress, amount);
     console.log(`${selectedToken.symbol} Transfer Loading - ${TRANSFER.hash}`);
     await TRANSFER.wait();
     console.log(`${selectedToken.symbol} Transfer Success - ${TRANSFER.hash}`);
@@ -418,7 +419,7 @@ const processBlockchainPayment = async () => {
         throw new Error('Selected token not found');
       }
       
-      const success = await transferTokens(selectedToken.address, amountInWei, address);
+      const success = await transferTokens(selectedToken.address, amountInWei);
       return success;
     }
   } catch (error) {

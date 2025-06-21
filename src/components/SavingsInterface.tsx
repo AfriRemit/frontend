@@ -315,6 +315,7 @@ const AjoEsusuInterface = () => {
       const AFRI_Contract = await AFRISTABLE_CONTRACT_INSTANCE();
       const TOKEN_Contract= await TEST_TOKEN_CONTRACT_INSTANCE(tokenAddress);
       if(tokenAddress == '0xc5737615ed39b6B089BEDdE11679e5e1f6B9E768'){
+        console
        
         const tx = await AFRI_Contract.approve(CONTRACT_ADDRESSES.savingAddress,amount);
           await tx.wait();      

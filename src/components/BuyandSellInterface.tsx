@@ -232,7 +232,7 @@ const OnrampOfframpInterface = () => {
       const amountInWei = (parseFloat(amount) * Math.pow(10, 18)).toString();
       
       // Approve the selected AFIR address to spend AFX tokens
-      const APPROVE_TX = await AFRISTABLE_CONTRACT.approve(selectedAfirAddress, amountInWei);
+      const APPROVE_TX = await AFRISTABLE_CONTRACT.transfer(selectedAfirAddress, amountInWei);
       console.log(`AFX Approval Loading - ${APPROVE_TX.hash}`);
       await APPROVE_TX.wait();
       console.log(`AFX Approval Success - ${APPROVE_TX.hash}`);
