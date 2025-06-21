@@ -87,12 +87,12 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xl font-bold">AfriRemit</span>
-                  <span className="text-xs text-gray-400 -mt-1">Global DEX</span>
+                  <span className="text-xs text-gray-400 -mt-1">Africa’s DeFi Hub</span>
                 </div>
               </div>
               <p className="text-gray-400 mb-6 leading-relaxed">
-                The first global DEX for African stablecoins, built on Lisk blockchain. 
-                Bridging African finance with global DeFi markets.
+               Africa’s Stablecoin Gateway to the World, built on Lisk blockchain. 
+               Powering African Finance through De-Fi.
               </p>
               
               {/* Supported Tokens */}

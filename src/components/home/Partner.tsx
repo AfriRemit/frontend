@@ -11,105 +11,77 @@ const TrustedPartners: React.FC = () => {
     {
       name: "Lisk",
       description: "Blockchain Infrastructure",
-      logo: "https://cryptologos.cc/logos/lisk-lsk-logo.png",
+      logo: "https://storage.googleapis.com/accesswire/logos/subaccounts/53774.png?v=2",
       website: "https://lisk.com",
-      gradient: "from-blue-500 to-purple-600",
-      bgColor: "bg-blue-50"
+     
     },
     {
       name: "Paystack",
       description: "Payment Gateway",
-      logo: "https://paystack.com/assets/img/logos/paystack-icon-colored.svg",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/1/1f/Paystack.png",
       website: "https://paystack.com",
       gradient: "from-green-500 to-teal-600",
       bgColor: "bg-green-50"
     },
-    {
-      name: "Flutterwave",
-      description: "Fintech Solutions",
-      logo: "https://flutterwave.com/images/logo/logo-mark/full.svg",
-      website: "https://flutterwave.com",
-      gradient: "from-orange-500 to-red-600",
-      bgColor: "bg-orange-50"
-    },
+   
     {
       name: "Chainlink",
       description: "Price Oracles",
-      logo: "https://cryptologos.cc/logos/chainlink-link-logo.png",
+      logo: "https://cdn.prod.website-files.com/5f6b7190899f41fb70882d08/665705c1f3833b5b5d8f4ffb_logo-chainlink-blue.svg",
       website: "https://chain.link",
       gradient: "from-blue-600 to-indigo-600",
       bgColor: "bg-blue-50"
     },
     {
-      name: "MetaMask",
-      description: "Wallet Integration",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg",
-      website: "https://metamask.io",
-      gradient: "from-yellow-500 to-orange-600",
-      bgColor: "bg-yellow-50"
-    },
-    {
-      name: "WalletConnect",
-      description: "Multi-Wallet Support",
-      logo: "https://walletconnect.com/static/logos/walletconnect-logo.svg",
-      website: "https://walletconnect.com",
-      gradient: "from-purple-500 to-pink-600",
-      bgColor: "bg-purple-50"
-    },
-    {
-      name: "Polygon",
-      description: "Scaling Solution",
-      logo: "https://cryptologos.cc/logos/polygon-matic-logo.png",
-      website: "https://polygon.technology",
-      gradient: "from-purple-600 to-indigo-600",
-      bgColor: "bg-purple-50"
-    },
-    {
-      name: "Binance",
-      description: "Crypto Exchange",
-      logo: "https://cryptologos.cc/logos/binance-coin-bnb-logo.png",
-      website: "https://binance.com",
-      gradient: "from-yellow-400 to-orange-500",
-      bgColor: "bg-yellow-50"
-    }
+  name: "Africa's Talking",
+  description: "Telco & Airtime Integration",
+  logo: "https://dka575ofm4ao0.cloudfront.net/pages-transactional_logos/retina/855412/AT_Color-71519b9f-5507-4527-a596-45a7698d82b7.png", // or use a custom icon if needed
+  website: "https://africastalking.com",
+  gradient: "from-red-600 to-yellow-600",
+  bgColor: "bg-red-50"
+}
+
   ];
 
-  const achievements = [
-    {
-      icon: () => <img src="https://cryptologos.cc/logos/chainlink-link-logo.png" alt="Chainlink" className="w-10 h-10 object-contain" />,
-      title: "Security Audited",
-      description: "Smart contracts audited by leading blockchain security firms",
-      color: "text-emerald-600",
-      bg: "bg-emerald-100",
-      gradient: "from-emerald-400 to-teal-500"
-    },
-    {
-      icon: () => <img src="https://paystack.com/assets/img/logos/paystack-icon-colored.svg" alt="Paystack" className="w-10 h-10 object-contain" />,
-      title: "Award Winning",
-      description: "Recognized for innovation in African fintech solutions",
-      color: "text-blue-600",
-      bg: "bg-blue-100",
-      gradient: "from-blue-400 to-cyan-500"
-    },
-    {
-      icon: () => <img src="https://cryptologos.cc/logos/lisk-lsk-logo.png" alt="Lisk" className="w-10 h-10 object-contain" />,
-      title: "Global Reach",
-      description: "Serving users across multiple African countries",
-      color: "text-purple-600",
-      bg: "bg-purple-100",
-      gradient: "from-purple-400 to-pink-500"
-    },
-    {
-      icon: () => <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="Binance" className="w-10 h-10 object-contain" />,
-      title: "Growing Fast",
-      description: "Rapid adoption and expanding user base",
-      color: "text-orange-600",
-      bg: "bg-orange-100",
-      gradient: "from-orange-400 to-red-500"
-    }
-  ];
+ const achievements = [
+{
+  icon: () => <img src="https://cdn.prod.website-files.com/5f6b7190899f41fb70882d08/665705c1f3833b5b5d8f4ffb_logo-chainlink-blue.svg" alt="Chainlink" className="w-10 h-10 object-contain" />,
+  title: "Price Feed Integrated",
+  description: "Decentralized Chainlink oracle powering token exchange rates",
+  color: "text-white-600",
+  bg: "bg-white-100",
+  gradient: "from-green-400 to-cyan-500"
+}
+,
+  {
+    icon: () => <img src="https://upload.wikimedia.org/wikipedia/commons/1/1f/Paystack.png" alt="Paystack" className="w-10 h-10 object-contain" />,
+    title: "Payment Gateway Ready",
+    description: "Integrated test setup with Paystack for fiat on-ramp",
+    color: "text-blue-600",
+    bg: "bg-blue-100",
+    gradient: "from-blue-400 to-cyan-500"
+  },
+  {
+    icon: () => <img src="https://sepolia-blockscout.lisk.com/assets/configs/network_icon_dark.svg" alt="Lisk" className="w-10 h-10 object-contain" />,
+    title: "Testnet Deployed",
+    description: "MVP live on Lisk Sepolia testnet with core features",
+    color: "text-purple-600",
+    bg: "bg-purple-100",
+    gradient: "from-purple-400 to-pink-500"
+  },
+  {
+  icon: () => <img src="https://dka575ofm4ao0.cloudfront.net/pages-transactional_logos/retina/855412/AT_Color-71519b9f-5507-4527-a596-45a7698d82b7.png" alt="Africa's Talking" className="w-10 h-10 object-contain" />,
+  title: "Utility Payment Enabled",
+  description: "Bill, airtime, and service integrations via Africa's Talking API",
+ color: "text-indigo-700",
+  bg: "bg-indigo-100",
+  gradient: "from-indigo-500 to-blue-500"
+}
 
-  const itemsPerSlide = 4;
+];
+
+
+  const itemsPerSlide = 2;
   const totalSlides = Math.ceil(partners.length / itemsPerSlide);
 
   useEffect(() => {
@@ -167,7 +139,7 @@ const TrustedPartners: React.FC = () => {
             </span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            We partner with the best in blockchain, fintech, and security to deliver a world-class experience
+           Collaborating with top innovators in blockchain, fintech, and security to build a seamless and reliable experience.
           </p>
         </div>
 

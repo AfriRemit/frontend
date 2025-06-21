@@ -19,8 +19,10 @@ import {
   Phone,
   Home
 } from 'lucide-react';
+
 import tokens from '@/lib/Tokens/tokens';
 import { useContractInstances } from '@/provider/ContractInstanceProvider';
+import { CONTRACT_ADDRESSES } from '@/provider/ContractInstanceProvider';
 
 // Mock contract functions
 const mockContractCall = async (delay = 2000) => {
@@ -58,7 +60,9 @@ const UtilityPaymentInterface = () => {
   const [selectedService, setSelectedService] = useState('airtime');
   const [selectedCrypto, setSelectedCrypto] = useState('cNGN');
   const [amount, setAmount] = useState('');
+
   const [phoneNumber, setPhoneNumber] = useState('');
+
   const [meterNumber, setMeterNumber] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [selectedProvider, setSelectedProvider] = useState('');
@@ -66,8 +70,9 @@ const UtilityPaymentInterface = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState({ title: '', message: '' });
-  const{isConnected, address}=useContractInstances()
  
+   const { TEST_TOKEN_CONTRACT_INSTANCE, AFRISTABLE_CONTRACT_INSTANCE, isConnected,address } = useContractInstances();
+  
     const filteredTokens = tokens.filter(t => t.id >= 5);
   const services = [
     { 
@@ -158,6 +163,8 @@ const UtilityPaymentInterface = () => {
     { code: 'GHS', name: 'Ghanaian Cedi', symbol: '₵', crypto: 'cGHS' }
   ];
 
+  
+
   // Auto-sync crypto with service selection
   useEffect(() => {
     if (selectedService && selectedCrypto === 'AFX') {
@@ -165,15 +172,10 @@ const UtilityPaymentInterface = () => {
     }
   }, [selectedService]);
 
-  // Reset provider when service changes
-  useEffect(() => {
-    setSelectedProvider('');
-    setPhoneNumber('');
-    setMeterNumber('');
-    setAccountNumber('');
-    setAmount('');
-  }, [selectedService]);
+  
 
+  // Reset provider when service changes
+ 
   const getCurrentService = () => {
     return services.find(s => s.id === selectedService);
   };
@@ -211,84 +213,289 @@ const UtilityPaymentInterface = () => {
     return token?.img || '/api/placeholder/32/32';
   };
 
-  const validateInputs = () => {
-    const service = getCurrentService();
-    const amountValue = parseFloat(amount);
+ 
 
-    if (!amount || amountValue <= 0) return 'Enter a valid amount';
-    if (amountValue < service.minAmount) return `Minimum amount is ${getCurrencySymbol()}${service.minAmount}`;
-    if (amountValue > service.maxAmount) return `Maximum amount is ${getCurrencySymbol()}${service.maxAmount}`;
-    if (!selectedProvider) return 'Select a service provider';
+   
+  const makePayment = async () => {
+  try {
+    setIsProcessing(true);
 
-    switch (selectedService) {
-      case 'airtime':
-      case 'internet':
-        if (!phoneNumber || phoneNumber.length < 10) return 'Enter a valid phone number';
-        break;
-      case 'electricity':
-        if (!meterNumber || meterNumber.length < 8) return 'Enter a valid meter number';
-        break;
-      case 'cable':
-      case 'education':
-  if (!accountNumber || accountNumber.length < 6) return 'Enter a valid exam registration number';
-  break;
-      case 'fuel':
-        // No additional validation needed for fuel
-        break;
-    }
+    // Step 1: Perform blockchain payment
+    const blockchainSuccess = await processBlockchainPayment();
 
-    return null;
-  };
-
-  const mockPayment = async () => {
-    try {
-      setIsProcessing(true);
-      
-      // Simulate blockchain transaction
-      const tx = await mockContractCall(3000);
-      console.log('Transaction hash:', tx);
-      
+    // Step 2: If blockchain payment failed, stop
+    
+    if (!blockchainSuccess) {
+      console.error('Blockchain payment failed');
       setIsProcessing(false);
-      return true;
-    } catch (error) {
-      setIsProcessing(false);
-      console.error('Payment error:', error);
       return false;
     }
-  };
 
-  const handlePayment = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
+    // Step 3: If blockchain succeeded and service is 'airtime', purchase airtime
+    if (selectedService === 'airtime') {
+      const airtimeSuccess = await purchaseAirtime();
+      if (!airtimeSuccess) {
+        console.error('Airtime purchase failed');
+        setIsProcessing(false);
+        return false;
+      }
     }
 
-    const validationError = validateInputs();
-    if (validationError) {
-      alert(validationError);
-      return;
-    }
+    setIsProcessing(false);
+    return true;
 
-    const success = await mockPayment();
+  } catch (error) {
+    console.error('Payment error:', error);
+    setIsProcessing(false);
+    return false;
+  }
+};
+
+
+const purchaseAirtime = async () => {
+  console.log('🚀 Starting airtime purchase...');
+  console.log('📝 Request payload:', {
+    phoneNumber: phoneNumber,
+    amount: amount,
+    selectedCrypto: selectedCrypto
+  });
+
+  try {
+    const payload = {
+      phoneNumber: phoneNumber,
+      amount: amount,
+      selectedCrypto: selectedCrypto
+    };
+    console.log('📦 Payload being sent:', JSON.stringify(payload, null, 2));
+
+    console.log('📡 Making API call to: https://remi-fi-backend.onrender.com/api/airtime/purchase');
     
-    if (success) {
-      const service = getCurrentService();
-      const provider = providers[selectedService]?.find(p => p.id === selectedProvider);
-      
-      setSuccessMessage({
-        title: 'Payment Successful!',
-        message: `${service.name} payment of ${getCurrencySymbol()}${amount} to ${provider?.name} has been processed successfully.`
+    const response = await fetch('https://remi-fi-backend.onrender.com/api/airtime/purchase', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    console.log('📥 Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
+    const result = await response.json();
+    console.log('📋 Full API Response:', JSON.stringify(result, null, 2));
+    
+    // Check if the airtime purchase was successful using your API's response format
+    if (result.success) {
+      console.log('✅ AIRTIME PURCHASE SUCCESSFUL!');
+      console.log('🎉 Transaction Details:', {
+        transactionId: result.data?.transactionId,
+        amount: result.data?.amount,
+        phoneNumber: result.data?.phoneNumber,
+        discount: result.data?.discount,
+        status: result.data?.status
       });
-      setShowSuccessModal(true);
+      return true;
+    } else {
+      console.log('❌ AIRTIME PURCHASE FAILED!');
+      console.log('🚨 Error Details:', {
+        success: result.success,
+        error: result.error,
+        message: result.message,
+        canRetry: result.canRetry,
+        details: result.details
+      });
       
-      // Reset form
-      setAmount('');
-      setPhoneNumber('');
-      setMeterNumber('');
-      setAccountNumber('');
-      setSelectedProvider('');
+      // Log the full error object for debugging
+      console.log('🔍 Full Error Response:', JSON.stringify(result, null, 2));
+      return false;
     }
-  };
+  } catch (error) {
+    console.log('💥 CRITICAL ERROR - API Call Failed!');
+    console.log('🔥 Error Type:', error.name);
+    console.log('🔥 Error Message:', error.message);
+    console.log('🔥 Error Stack:', error.stack);
+    
+    // Check if it's a network error
+    if (error.message.includes('fetch')) {
+      console.log('🌐 This appears to be a NETWORK ERROR');
+      console.log('💡 Check if your server is running on http://localhost:3000');
+    }
+    
+    // Check if it's a JSON parsing error
+    if (error.message.includes('JSON')) {
+      console.log('📝 This appears to be a JSON PARSING ERROR');
+      console.log('💡 The server might be returning HTML instead of JSON');
+    }
+    
+    console.log('🔍 Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    return false;
+  }
+};
+
+
+
+
+const handlePayment = async () => {
+  if (!isConnected) {
+    alert('Please connect your wallet first');
+    return;
+  }
+
+  const validationError = validateInputs();
+  if (validationError) {
+    alert(validationError);
+    return;
+  }
+
+  const success = await makePayment(); // Change this line from mockPayment() to makePayment()
+  
+  if (success) {
+    const service = getCurrentService();
+    const provider = providers[selectedService]?.find(p => p.id === selectedProvider);
+    
+    setSuccessMessage({
+      title: 'Payment Successful!',
+      message: `${service.name} payment of ${getCurrencySymbol()}${amount} to ${provider?.name} has been processed successfully.`
+    });
+    setShowSuccessModal(true);
+    
+    // Reset form
+    setAmount('');
+    setPhoneNumber('');
+    setMeterNumber('');
+    setAccountNumber('');
+    setSelectedProvider('');
+  }
+};
+
+const transferTokens = async (tokenAddress, amount, recipientAddress) => {
+  try {
+    setIsProcessing(true);
+    
+    // Find the selected token to get its details
+    const selectedToken = filteredTokens.find(t => t.address === tokenAddress);
+    if (!selectedToken) {
+      throw new Error('Selected token not found');
+    }
+    
+    const TOKEN_CONTRACT = await TEST_TOKEN_CONTRACT_INSTANCE(tokenAddress);
+    const TRANSFER = await TOKEN_CONTRACT.transfer(address, amount);
+    console.log(`${selectedToken.symbol} Transfer Loading - ${TRANSFER.hash}`);
+    await TRANSFER.wait();
+    console.log(`${selectedToken.symbol} Transfer Success - ${TRANSFER.hash}`);
+    
+    setIsProcessing(false);
+    return true;
+  } catch (error) {
+    setIsProcessing(false);
+    console.log(`Transfer Error:`, error);
+    return false;
+  }
+};
+
+
+
+const processBlockchainPayment = async () => {
+  try {
+    const amountInWei = (parseFloat(amount) * Math.pow(10, 18)).toString();
+    
+    if (selectedCrypto === 'AFX') {
+      // Use AFX transfer for AFX payments
+      const AFRISTABLE_CONTRACT = await AFRISTABLE_CONTRACT_INSTANCE();
+      const TRANSFER = await AFRISTABLE_CONTRACT.transfer(CONTRACT_ADDRESSES.afriStableAddress, amountInWei);
+      console.log(`AFX Transfer Loading - ${TRANSFER.hash}`);
+      await TRANSFER.wait();
+      console.log(`AFX Transfer Success - ${TRANSFER.hash}`);
+      return true;
+    } else {
+      // Use TEST_TOKEN_INSTANCE for other stablecoins
+      const selectedToken = filteredTokens.find(t => t.symbol === selectedCrypto);
+      if (!selectedToken) {
+        throw new Error('Selected token not found');
+      }
+      
+      const success = await transferTokens(selectedToken.address, amountInWei, address);
+      return success;
+    }
+  } catch (error) {
+    console.error('Blockchain payment error:', error);
+    return false;
+  }
+};
+
+const debugFormState = () => {
+  console.log('Form Debug State:', {
+    selectedService,
+    selectedProvider,
+    amount,
+    phoneNumber,
+    meterNumber,
+    accountNumber,
+    isConnected,
+    isProcessing
+  });
+};
+
+
+const validateInputs = () => {
+  const service = getCurrentService();
+  const amountValue = parseFloat(amount);
+
+  console.log('Validation Debug:', {
+    amount,
+    amountValue,
+    selectedProvider,
+    phoneNumber,
+    meterNumber,
+    accountNumber,
+    selectedService
+  });
+
+  if (!amount || amountValue <= 0) return 'Enter a valid amount';
+  if (amountValue < service.minAmount) return `Minimum amount is ${getCurrencySymbol()}${service.minAmount}`;
+  if (amountValue > service.maxAmount) return `Maximum amount is ${getCurrencySymbol()}${service.maxAmount}`;
+  if (!selectedProvider) return 'Select a service provider';
+
+  switch (selectedService) {
+    case 'airtime':
+    case 'internet':
+      if (!phoneNumber || phoneNumber.length < 10) return 'Enter a valid phone number';
+      break;
+    case 'electricity':
+      if (!meterNumber || meterNumber.length < 8) return 'Enter a valid meter number';
+      break;
+    case 'cable':
+      if (!accountNumber || accountNumber.length < 6) return 'Enter a valid account number';
+      break;
+    case 'education':
+      if (!accountNumber || accountNumber.length < 6) return 'Enter a valid exam registration number';
+      break;
+  }
+
+  return null;
+};
+
+// Also check if your button condition is too strict. Try this simpler version:
+const isFormComplete = () => {
+  if (!amount || !selectedProvider) return false;
+  
+  switch (selectedService) {
+    case 'airtime':
+    case 'internet':
+      return phoneNumber && phoneNumber.length >= 10;
+    case 'electricity':
+      return meterNumber && meterNumber.length >= 8;
+    case 'cable':
+    case 'education':
+      return accountNumber && accountNumber.length >= 6;
+    default:
+      return true;
+  }
+};
 
   const renderServiceInputs = () => {
     switch (selectedService) {
@@ -374,7 +581,7 @@ const UtilityPaymentInterface = () => {
             <GraduationCap className="w-4 h-4" />
           </span>
           <input
-            type="text"
+            type="number"
             value={accountNumber}
             onChange={(e) => setAccountNumber(e.target.value)}
             placeholder="Enter exam registration number"
@@ -589,20 +796,20 @@ const UtilityPaymentInterface = () => {
           )}
 
           {/* Pay Button */}
-          <button
-            onClick={handlePayment}
-            disabled={isProcessing || !isConnected || !amount || !selectedProvider}
-            className="w-full bg-gradient-to-r from-orange-500 to-green-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {!isConnected
-              ? 'Connect Wallet First'
-              : isProcessing
-              ? 'Processing Payment...'
-              : !amount || !selectedProvider
-              ? 'Complete Form to Pay'
-              : `Pay ${getCurrencySymbol()}${calculateFees().total}`
-            }
-          </button>
+         <button
+  onClick={handlePayment}
+  disabled={isProcessing || !isConnected }
+  className="w-full bg-gradient-to-r from-orange-500 to-green-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {!isConnected
+    ? 'Connect Wallet First'
+    : isProcessing
+    ? 'Processing Payment...'
+    : !isFormComplete()
+    ? 'Complete Form to Pay'
+    : `Pay ${getCurrencySymbol()}${calculateFees().total}`
+  }
+</button>
         </div>
       </div>
 

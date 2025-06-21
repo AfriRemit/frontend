@@ -127,7 +127,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onPageChange }) => {
           <div className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-500/10 via-red-500/10 to-amber-500/10 backdrop-blur-xl border border-orange-200/30 text-orange-700 rounded-full text-sm font-semibold mb-12 hover:scale-105 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-red-400/20 transform -translate-x-full transition-transform duration-500"></div>
             <Star className="w-4 h-4 text-orange-500 mr-3 animate-spin-slow relative z-10" />
-            <span className="relative z-10">🌍 First Global DEX for African Stablecoins</span>
+            <span className="relative z-10">🌍 Africa’s Stablecoin Gateway to the World</span>
             <Zap className="w-4 h-4 text-red-500 ml-3 animate-pulse relative z-10" />
           </div>
 
@@ -135,10 +135,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onPageChange }) => {
           <div className="relative mb-12">
             <h1 className="text-4xl md:text-7xl lg:text-8xl font-black text-gray-900 mb-8 leading-none tracking-tight">
               <span className="block transform hover:scale-105 transition-transform duration-300">
-                Bridge African
+                Bridging African
               </span>
               <span className="block bg-gradient-to-r from-orange-500 via-red-500 to-amber-500 bg-clip-text text-transparent">
-                <span>Finance Globally</span>
+                <span>Finance with De-Fi</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-amber-500/20 blur-3xl animate-pulse"></div>
               </span>
             </h1>
@@ -161,9 +161,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onPageChange }) => {
               <ArrowRight className="w-5 h-5" />
             </button>
             
-            <button className="border border-gray-300 text-gray-700 px-8 py-4 rounded-full font-semibold text-lg hover:border-orange-400 hover:text-orange-600 transition-colors duration-200">
-              Watch Demo
-            </button>
+            <a
+  href="https://youtu.be/d_bBNkPbcbg"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="inline-block border border-gray-300 text-gray-700 px-8 py-4 rounded-full font-semibold text-lg hover:border-orange-400 hover:text-orange-600 transition-colors duration-200"
+>
+  Watch Demo
+</a>
+
           </div>
 
           {/* Stats */}

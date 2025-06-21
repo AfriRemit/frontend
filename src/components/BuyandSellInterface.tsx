@@ -204,7 +204,7 @@ const OnrampOfframpInterface = () => {
     }
   };
 
-  // Transfer function for crypto selling
+  // Transfer function for crypto selling cyms  kano central  
   const transferTokens = async (tokenAddress, amount, recipientAddress) => {
     try {
       setIsProcessing(true);
