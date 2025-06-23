@@ -54,6 +54,7 @@ const [poolPrices, setPoolPrices] = useState<{ [key: string]: string }>({});
  useEffect(() => {
   const fetchPrices = async () => {
     const pools = getAllLiquidityPools(); // e.g., ["ETH/USDC", "ETH/AFRC"]
+    console.log("Fetching prices for pools:", pools);
 
     const prices: { [key: string]: string } = {};
 
@@ -113,8 +114,7 @@ const getAvailableTokens = (selectedToken, isFromToken = true) => {
 };
 
 // Handle token selection with automatic switching
-const handleFromTokenChange = (event) => {
-  const newFromToken = event.target.value;
+const handleFromTokenChange = (newFromToken) => {
   setFromToken(newFromToken);
   
   // Get available tokens for the new from token
@@ -129,8 +129,7 @@ const handleFromTokenChange = (event) => {
 };
 
 
-const handleToTokenChange = (event) => {
-  const newToToken = event.target.value;
+const handleToTokenChange = (newToToken) => {
   setToToken(newToToken);
   // No need to change fromToken as it can be any token
 };
@@ -148,15 +147,15 @@ useEffect(()=>{
       
       setBal1(roundedBal1)
       setBal2(roundedBal2)
+      const PRICE_CONTRACT= await PRICEAPI_CONTRACT_INSTANCE();
+    
+  
       
-      const PRICE_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
-      
-      // Add null check for PRICE_CONTRACT
-      if (PRICE_CONTRACT && token1Address) {
-        const dollarRate = await PRICE_CONTRACT.getLatestPrice(token1Address);
-        const formattedDollarRate = ethers.formatEther(dollarRate);
-        setDollarRate(formattedDollarRate);
-      }
+      const dollarRate= await PRICE_CONTRACT.getLatestPrice(token1Address);
+     
+      const formattedDollarRate= ethers.formatEther(dollarRate)
+    
+      setDollarRate(formattedDollarRate)
 
     } catch (error) {
       console.error(error);
@@ -191,23 +190,19 @@ useEffect(()=>{
       setEstimatedAmount2(true);
       const PRICE_CONTRACT = await PRICEAPI_CONTRACT_INSTANCE();
       
-      // Add null check for PRICE_CONTRACT
-      if (!PRICE_CONTRACT) {
-        console.error('Price contract not available');
-        setEstimatedAmount2(false);
-        return;
-      }
-      
-      const TokenAmountInWei = ethers.parseEther(token1Amount);
+      const TokenAmountInWei: any = ethers.parseEther(token1Amount);
 
+      
+     
       try {
         const rate = await PRICE_CONTRACT.estimate(
           token1Address,
           token2Address,
           TokenAmountInWei
+         
         );
       
-        const f_rate: any = ethers.formatEther(rate);
+        const f_rate:any = ethers.formatEther(rate);
 
         const swapFee = (20 / 1000) * f_rate;
       
@@ -216,7 +211,7 @@ useEffect(()=>{
         const roundedAmount = parseFloat(amountTwoToReceive.toFixed(9));
         
         setToken2Amount(roundedAmount);
-        setAmountOneInWei(TokenAmountInWei.toString());
+        setAmountOneInWei(TokenAmountInWei);
         ///======  ESTIMATING TWO TO ONE =====//
         
         const Amount2InWei= ethers.parseEther("1");
@@ -230,8 +225,15 @@ useEffect(()=>{
 
         setBaseTwoRate(formattedTwoRate)
         
-        setAmountTwoRate(rateToExchangeTwotoOne.toString());
+        setAmountTwoRate(rateToExchangeTwotoOne);
         
+       
+       
+       
+        
+       
+        
+
       } catch (error) {
         console.error(error);
         setToken2Amount(null);
@@ -380,9 +382,8 @@ useEffect(()=>{
     return (parseFloat(amount) * rate).toFixed(6);
   };
 
-  const handleFromAmountChange = (event) => {
-    const value = event.target.value;
-    setToken1Amount(value);
+  const handleFromAmountChange = () => {
+   setToken1Amount(Bal1)
   };
 
   const swapTokens = () => {
@@ -527,86 +528,130 @@ useEffect(()=>{
         )}
 
         {/* From Token */}
-        <div className="bg-stone-50 rounded-xl p-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-stone-600 text-sm">From</span>
-            <span className="text-stone-600 text-sm">Balance: {Bal1} {fromToken}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <input
-              type="number"
-              value={token1Amount || ''}
-              onChange={handleFromAmountChange}
-              placeholder="0.0"
-              className="w-full sm:w-24 text-2xl font-semibold bg-transparent border-none outline-none"
-            />
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <img
-                src={tokens.find(t => t.symbol === fromToken)?.img || '/api/placeholder/32/32'}
-                alt={fromToken}
-                className="w-8 h-8 rounded-full"
-              />
-              <select
-                value={fromToken}
-                onChange={handleFromTokenChange}
-                className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium w-full sm:w-auto min-w-[120px] text-base"
-              >
-                <option value="">Select token</option>
-                {tokens.map((token) => (
-                  <option key={token.symbol} value={token.symbol}>
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+ <div className="space-y-4">
+  {/* From Token Block */}
+  <div className="bg-stone-50 rounded-xl p-4">
+    <div className="flex justify-between items-center mb-2">
+      <span className="text-stone-600 text-sm">From</span>
+      {address && !isNaN(Bal1) && (
+        <span className="text-stone-500 text-sm">
+          Balance: {Bal1} {fromToken}
+        </span>
+      )}
+    </div>
 
-        {/* Swap Button */}
-        <div className="flex justify-center">
-          <button
-            onClick={swapTokens}
-            className="p-2 bg-white border-2 border-stone-200 rounded-xl hover:bg-stone-50 transition-colors"
-          >
-            <ArrowUpDown className="w-5 h-5 text-stone-600" />
-          </button>
-        </div>
+    <div className="flex items-center justify-between">
+      <input
+        type="text"
+        inputMode="decimal"
+        pattern="[0-9]*[.,]?[0-9]*"
+        disabled={!isConnected}
+        value={token1Amount}
+        onChange={estimate}
+        className="w-24 text-2xl font-semibold bg-transparent border-none outline-none"
+        placeholder="0.0"
+      />
 
-        {/* To Token */}
-        <div className="bg-stone-50 rounded-xl p-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-stone-600 text-sm">To</span>
-            <span className="text-stone-600 text-sm">Balance: {Bal2} {toToken}</span>
-          </div>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <input
-              type="number"
-              value={toAmount}
-              onChange={(e) => setToAmount(e.target.value)}
-              placeholder="0.0"
-              className="w-full sm:w-24 text-2xl font-semibold bg-transparent border-none outline-none"
-            />
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <img
-                src={tokens.find(t => t.symbol === toToken)?.img || '/api/placeholder/32/32'}
-                alt={toToken}
-                className="w-8 h-8 rounded-full"
-              />
-              <select
-                value={toToken}
-                onChange={handleToTokenChange}
-                className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium w-full sm:w-auto min-w-[120px] text-base"
-              >
-                <option value="">Select token</option>
-                {tokens.map((token) => (
-                  <option key={token.symbol} value={token.symbol}>
-                    {token.symbol}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+      <div className="flex items-center space-x-2 ml-6">
+        {tokens.find(t => t.symbol === fromToken)?.img && (
+          <img
+            src={tokens.find(t => t.symbol === fromToken)?.img}
+            alt={fromToken}
+            className="w-8 h-8 rounded-full"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        )}
+
+      <select
+  value={fromToken}
+  onChange={(e) => handleFromTokenChange(e.target.value)}
+  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
+>
+  {getAvailableTokens(toToken, true).map(token => (
+    <option key={token.symbol} value={token.symbol}>
+      {token.symbol}
+    </option>
+  ))}
+</select>
+      </div>
+    </div>
+
+    <button 
+      onClick={() => handleFromAmountChange()}
+      className="text-terracotta text-sm mt-2 hover:underline"
+    >
+      Max
+    </button>
+  </div>
+
+  {/* Swap Arrow */}
+  <div className="flex justify-center">
+    <button
+      onClick={swapTokens}
+      className="p-2 bg-white border-2 border-stone-200 rounded-xl hover:border-terracotta transition-colors"
+    >
+      <ArrowUpDown className="w-5 h-5 text-stone-600" />
+    </button>
+  </div>
+
+  {/* To Token Block */}
+  <div className="bg-stone-50 rounded-xl p-4">
+    <div className="flex justify-between items-center mb-2">
+      <span className="text-stone-600 text-sm">To</span>
+      {address && !isNaN(Bal2) && (
+        <span className="text-stone-500 text-sm">
+          Balance: {Bal2} {toToken}
+        </span>
+      )}
+    </div>
+
+    <div className="flex items-center justify-between">
+      <input
+        type="text"
+        inputMode="decimal"
+        pattern="[0-9]*[.,]?[0-9]*"
+        readOnly
+        value={token2Amount !== null ? token2Amount : ''}
+        className="w-40 text-2xl font-semibold bg-transparent border-none outline-none text-stone-800"
+        placeholder="0.0"
+      />
+
+      <div className="flex items-center space-x-2 ml-6">
+        {tokens.find(t => t.symbol === toToken)?.img && (
+          <img
+            src={tokens.find(t => t.symbol === toToken)?.img}
+            alt={toToken}
+            className="w-8 h-8 rounded-full"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        )}
+
+        <select
+  value={toToken}
+  onChange={(e) => handleToTokenChange(e.target.value)}
+  className="bg-white border border-stone-300 rounded-lg px-3 py-2 font-medium min-w-[120px]"
+  disabled={getAvailableTokens(fromToken, false).length === 0}
+>
+  {getAvailableTokens(fromToken, false).length === 0 ? (
+    <option value="">No liquidity pools available</option>
+  ) : (
+    getAvailableTokens(fromToken, false).map(token => (
+      <option key={token.symbol} value={token.symbol}>
+        {token.symbol}
+      </option>
+    ))
+  )}
+</select>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
         {/* Swap Details */}
         {token1Amount && (
