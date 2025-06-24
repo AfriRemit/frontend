@@ -143,6 +143,7 @@ useEffect(()=>{
       const bal2 = await fetchBalance(token2Address);
       const roundedBal1 = roundToTwoDecimalPlaces(bal1)
       const roundedBal2 = roundToTwoDecimalPlaces(bal2)
+      console.log('roundedBal1',roundedBal1)
     
       
       setBal1(roundedBal1)

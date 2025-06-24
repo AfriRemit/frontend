@@ -70,6 +70,7 @@ const UtilityPaymentInterface = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState({ title: '', message: '' });
+  const [isRecharging, setIsRecharging] = useState(false);
  
    const { TEST_TOKEN_CONTRACT_INSTANCE, AFRISTABLE_CONTRACT_INSTANCE, isConnected,address } = useContractInstances();
   
@@ -260,6 +261,9 @@ const purchaseAirtime = async () => {
     selectedCrypto: selectedCrypto
   });
 
+  // Set loading state to true when starting the purchase
+  setIsRecharging(true);
+
   try {
     const payload = {
       phoneNumber: phoneNumber,
@@ -269,7 +273,7 @@ const purchaseAirtime = async () => {
     console.log('📦 Payload being sent:', JSON.stringify(payload, null, 2));
 
     console.log('📡 Making API call to: https://remi-fi-backend.onrender.com/api/airtime/purchase');
-    
+
     const response = await fetch('https://remi-fi-backend.onrender.com/api/airtime/purchase', {
       method: 'POST',
       headers: {
@@ -287,7 +291,7 @@ const purchaseAirtime = async () => {
 
     const result = await response.json();
     console.log('📋 Full API Response:', JSON.stringify(result, null, 2));
-    
+
     // Check if the airtime purchase was successful using your API's response format
     if (result.success) {
       console.log('✅ AIRTIME PURCHASE SUCCESSFUL!');
@@ -308,7 +312,7 @@ const purchaseAirtime = async () => {
         canRetry: result.canRetry,
         details: result.details
       });
-      
+
       // Log the full error object for debugging
       console.log('🔍 Full Error Response:', JSON.stringify(result, null, 2));
       return false;
@@ -318,24 +322,26 @@ const purchaseAirtime = async () => {
     console.log('🔥 Error Type:', error.name);
     console.log('🔥 Error Message:', error.message);
     console.log('🔥 Error Stack:', error.stack);
-    
+
     // Check if it's a network error
     if (error.message.includes('fetch')) {
       console.log('🌐 This appears to be a NETWORK ERROR');
       console.log('💡 Check if your server is running on http://localhost:3000');
     }
-    
+
     // Check if it's a JSON parsing error
     if (error.message.includes('JSON')) {
       console.log('📝 This appears to be a JSON PARSING ERROR');
       console.log('💡 The server might be returning HTML instead of JSON');
     }
-    
+
     console.log('🔍 Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     return false;
+  } finally {
+    // Always set loading state to false when the function completes (success or error)
+    setIsRecharging(false);
   }
 };
-
 
 
 
@@ -797,13 +803,15 @@ const isFormComplete = () => {
           )}
 
           {/* Pay Button */}
-         <button
+  <button
   onClick={handlePayment}
-  disabled={isProcessing || !isConnected }
+  disabled={isProcessing || !isConnected || isRecharging}
   className="w-full bg-gradient-to-r from-orange-500 to-green-600 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
 >
   {!isConnected
     ? 'Connect Wallet First'
+    : isRecharging
+    ? 'Processing Airtime Purchase...'
     : isProcessing
     ? 'Processing Payment...'
     : !isFormComplete()

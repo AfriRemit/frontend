@@ -242,23 +242,45 @@ export const ContractInstanceProvider: React.FC<{ children: ReactNode }> = ({ ch
       createThirdwebCompatibleSigner();
     }
   }, [account, wallet, isConnected, isCorrectNetwork, provider, signer, connectionError]);
+
+  // Updated effect to fetch native balance using signer's provider (like in second file)
   useEffect(() => {
     const fetchNativeBalance = async () => {
-      if (provider && address && isConnected && isCorrectNetwork) {
+      if (signer && address && isConnected && isCorrectNetwork) {
         try {
-          const balance = await provider.getBalance(address);
-          setNativeBalance(ethers.formatEther(balance));
+          // Use the signer's provider first (like in the working second file)
+          const signerProvider = signer.provider;
+          if (signerProvider) {
+            console.log('Fetching native balance using signer provider...');
+            const balance = await signerProvider.getBalance(address);
+            setNativeBalance(ethers.formatEther(balance));
+            console.log('✅ Native balance fetched successfully using signer provider:', ethers.formatEther(balance));
+          } else if (provider) {
+            // Fallback to Thirdweb RPC provider
+            console.log('Fallback: Fetching native balance using Thirdweb RPC provider...');
+            const balance = await provider.getBalance(address);
+            setNativeBalance(ethers.formatEther(balance));
+            console.log('✅ Native balance fetched successfully using RPC provider:', ethers.formatEther(balance));
+          } else {
+            console.warn('No provider available for balance fetch');
+            setNativeBalance('0');
+          }
         } catch (error) {
           console.error('Failed to fetch native balance:', error);
           setNativeBalance('0');
         }
       } else {
+        console.log('Native balance fetch conditions not met:');
+        console.log('- Signer:', !!signer);
+        console.log('- Address:', !!address);
+        console.log('- Is Connected:', isConnected);
+        console.log('- Is Correct Network:', isCorrectNetwork);
         setNativeBalance('0');
       }
     };
 
     fetchNativeBalance();
-  }, [provider, address, isConnected, isCorrectNetwork]);
+  }, [signer, address, isConnected, isCorrectNetwork, provider]);
 
   // Effect to handle network changes
   useEffect(() => {
@@ -282,8 +304,8 @@ export const ContractInstanceProvider: React.FC<{ children: ReactNode }> = ({ ch
   // Fetch balance function
   const fetchBalance = async (faucetAddress: string): Promise<string | undefined> => {
     try {
-      if (!address || !isConnected || !isCorrectNetwork || !provider) {
-        throw new Error('Wallet not connected, wrong network, or provider not available');
+      if (!address || !isConnected || !isCorrectNetwork) {
+        throw new Error('Wallet not connected or wrong network');
       }
 
       const token = tokens.find(token => token.address === faucetAddress);
