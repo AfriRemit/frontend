@@ -8,7 +8,7 @@ import { CONTRACT_ADDRESSES } from '@/provider/ContractInstanceProvider';
 
 
 const roundToTwoDecimalPlaces = (num) => {
-  return Math.round(num * 100) / 100;
+  return Math.round(num * 10000) / 10000;
 };
 
 const roundToFiveDecimalPlaces = (num) => {
