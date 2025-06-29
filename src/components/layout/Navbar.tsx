@@ -113,17 +113,17 @@ const TopNavbar = ({
           {/* Logo and Name */}
           <button 
             onClick={() => onPageChange('dashboard')} 
-            className="flex items-center space-x-3 group curser-pointer"
+            className="flex items-center space-x-1 group curser-pointer"
           >  
             <div className="relative">
               <img 
                 src="https://res.cloudinary.com/ecosheane/image/upload/v1749952368/logo_virjcs.jpg"
                 alt="Remifi Logo"
-                className="w-12 h-12 rounded-xl object-cover group-hover:shadow-orange-200 transition-all duration-300 group-hover:scale-105"
+                className="w-12 h-12 rounded-xl object-cover transition-all duration-300 group-hover:scale-105"
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold text-gray-900">
                 Remifi
               </span>
             </div>

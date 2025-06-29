@@ -47,9 +47,8 @@ const Navbar: React.FC<NavbarProps> = ({ onPageChange }) => {
                 <img
                   src="https://res.cloudinary.com/ecosheane/image/upload/v1749952368/logo_virjcs.jpg"
                   alt="AfriRemit Logo"
-                  className="w-12 h-12 rounded-xl object-cover group-hover:shadow-orange-200 transition-all duration-300 group-hover:scale-105"
+                  className="w-12 h-12 rounded-xl object-cover transition-all duration-300 group-hover:scale-105"
                 />
-                <div className="absolute -inset-1 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
               </div>
 
               <div className="flex flex-col">
@@ -78,7 +77,7 @@ const Navbar: React.FC<NavbarProps> = ({ onPageChange }) => {
           <div className="hidden md:flex items-center space-x-4">
             <button
               onClick={handleStartTrading}
-              className="border border-orange-400 text-gray-700 px-6 py-3 rounded-full font-semibold text-lg hover:border-gray-300 hover:text-orange-600 transition-colors duration-200 flex items-center justify-center space-x-2"
+              className="border-2 border-emerald-500 text-gray-700 px-6 py-3 rounded-full font-semibold text-lg hover:border-emerald-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200 flex items-center justify-center space-x-2"
             >
               <span>Start trading</span>
             </button>

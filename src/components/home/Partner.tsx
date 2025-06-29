@@ -114,11 +114,12 @@ const TrustedPartners: React.FC = () => {
             transform: translateX(0);
           }
           100% {
-            transform: translateX(-50%);
+            transform: translateX(-25%);
           }
         }
         .animate-scroll {
-          animation: scroll 20s linear infinite;
+          animation: scroll 30s linear infinite;
+          animation-play-state: running;
         }
         .animate-scroll:hover {
           animation-play-state: paused;
@@ -146,8 +147,8 @@ const TrustedPartners: React.FC = () => {
         {/* Continuous Scrolling Partners */}
         <div className="relative mb-20 overflow-hidden">
           <div className="flex animate-scroll">
-            {/* First set of logos */}
-            {partners.concat(partners).map((partner, index) => (
+            {/* Duplicate partners multiple times for seamless infinite scroll */}
+            {partners.concat(partners).concat(partners).concat(partners).map((partner, index) => (
               <div
                 key={index}
                 className="flex-shrink-0 mx-8 group"
