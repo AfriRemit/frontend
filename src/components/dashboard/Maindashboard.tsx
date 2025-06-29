@@ -172,8 +172,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
 
   // Handle quick actions
   const handleQuickAction = (action: string) => {
+    console.log('Quick action clicked:', action);
     if (onPageChange) {
+      console.log('Calling onPageChange with:', action);
       onPageChange(action);
+    } else {
+      console.log('onPageChange is not available');
     }
   };
 

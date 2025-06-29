@@ -115,7 +115,7 @@ const ConnectedDashboard: React.FC<ConnectedDashboardProps> = ({
             <button 
               key={action.key}
               onClick={() => onQuickAction(action.key)}
-              className="group bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="group bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer active:scale-95"
             >
               <div className={`w-12 h-12 bg-gradient-to-br ${action.gradient} rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                 {React.createElement(action.icon, { className: "w-6 h-6 text-white" })}
@@ -144,12 +144,27 @@ const ConnectedDashboard: React.FC<ConnectedDashboardProps> = ({
               .slice(0, 4)
               .map(([currency, data], index) => {
                 const typedData = data as { rate: number, change: number, positive: boolean | null };
+                
+                // Define currency details with flags and names
+                const currencyDetails = {
+                  'cNGN': { flag: '🇳🇬', name: 'Naira', country: 'Nigeria' },
+                  'cGHS': { flag: '🇬🇭', name: 'Cedis', country: 'Ghana' },
+                  'cKES': { flag: '🇰🇪', name: 'Shilling', country: 'Kenya' },
+                  'cZAR': { flag: '🇿🇦', name: 'Rand', country: 'South Africa' }
+                };
+                
+                const details = currencyDetails[currency as keyof typeof currencyDetails];
+                
                 return (
                   <div key={index} className="bg-gradient-to-br from-slate-50 to-white border border-slate-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-300">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="font-medium text-slate-700">{currency}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">{details?.flag}</span>
+                        <span className="font-medium text-slate-700">{currency}/USD</span>
+                      </div>
                       <div className={`w-2 h-2 rounded-full ${typedData.positive === true ? 'bg-emerald-500' : typedData.positive === false ? 'bg-red-500' : 'bg-slate-400'}`}></div>
                     </div>
+                    <div className="text-sm text-slate-500 mb-2">{details?.country}</div>
                     <div className="text-xl font-bold text-slate-900 mb-2">${typedData.rate.toFixed(6)}</div>
                     <div className="flex items-center justify-between">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full ${

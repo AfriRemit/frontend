@@ -1,10 +1,14 @@
 import React from 'react'
 import Maindashboard from "./dashboard/Maindashboard"
 
-const Dashboard = () => {
+interface DashboardProps {
+  onPageChange?: (page: string) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onPageChange }) => {
   return (
     <div>
-      <Maindashboard />
+      <Maindashboard onPageChange={onPageChange} />
     </div>
   )
 }
