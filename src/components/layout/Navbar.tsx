@@ -123,10 +123,10 @@ const TopNavbar = ({
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-bold text-gray-900">
-                Remifi
-              </span>
-            </div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  RemiFi
+                </span>
+              </div>
           </button>
           {/* Navlinks immediately after logo - hidden on mobile */}
           <nav className="hidden lg:flex items-center space-x-1 ml-2">

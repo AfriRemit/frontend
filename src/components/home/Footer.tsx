@@ -27,33 +27,33 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
       { name: 'Buy/Sell', page: 'Buy/Sell' }
     ],
     resources: [
-      { name: 'Documentation', href: 'https://docs.afriremit.com', external: true },
-      { name: 'API Reference', href: 'https://api.afriremit.com', external: true },
-      { name: 'Help Center', href: 'https://help.afriremit.com', external: true },
-      { name: 'Blog', href: 'https://blog.afriremit.com', external: true },
-      { name: 'Tutorials', href: 'https://tutorials.afriremit.com', external: true }
+      { name: 'Documentation', href: 'https://docs.remifi.com', external: true },
+      { name: 'API Reference', href: 'https://api.remifi.com', external: true },
+      { name: 'Help Center', href: 'https://help.remifi.com', external: true },
+      { name: 'Blog', href: 'https://blog.remifi.com', external: true },
+      { name: 'Tutorials', href: 'https://tutorials.remifi.com', external: true }
     ],
     company: [
-      { name: 'About Us', href: 'https://afriremit.com/about', external: true },
-      { name: 'Careers', href: 'https://afriremit.com/careers', external: true },
-      { name: 'Press Kit', href: 'https://afriremit.com/press', external: true },
-      { name: 'Partners', href: 'https://afriremit.com/partners', external: true },
-      { name: 'Contact', href: 'mailto:contact@afriremit.com', external: true }
+      { name: 'About Us', href: 'https://remifi.com/about', external: true },
+      { name: 'Careers', href: 'https://remifi.com/careers', external: true },
+      { name: 'Press Kit', href: 'https://remifi.com/press', external: true },
+      { name: 'Partners', href: 'https://remifi.com/partners', external: true },
+      { name: 'Contact', href: 'mailto:contact@remifi.com', external: true }
     ],
     legal: [
-      { name: 'Terms of Service', href: 'https://afriremit.com/terms', external: true },
-      { name: 'Privacy Policy', href: 'https://afriremit.com/privacy', external: true },
-      { name: 'Cookie Policy', href: 'https://afriremit.com/cookies', external: true },
-      { name: 'Security', href: 'https://afriremit.com/security', external: true },
-      { name: 'Compliance', href: 'https://afriremit.com/compliance', external: true }
+      { name: 'Terms of Service', href: 'https://remifi.com/terms', external: true },
+      { name: 'Privacy Policy', href: 'https://remifi.com/privacy', external: true },
+      { name: 'Cookie Policy', href: 'https://remifi.com/cookies', external: true },
+      { name: 'Security', href: 'https://remifi.com/security', external: true },
+      { name: 'Compliance', href: 'https://remifi.com/compliance', external: true }
     ]
   };
 
   const socialLinks = [
-    { icon: Twitter, href: 'https://twitter.com/afriremit', label: 'Twitter', external: true },
-    { icon: Github, href: 'https://github.com/afriremit', label: 'GitHub', external: true },
-    { icon: MessageCircle, href: 'https://discord.gg/afriremit', label: 'Discord', external: true },
-    { icon: Mail, href: 'mailto:hello@afriremit.com', label: 'Email', external: true }
+    { icon: Twitter, href: 'https://twitter.com/remifi', label: 'Twitter', external: true },
+    { icon: Github, href: 'https://github.com/remifi', label: 'GitHub', external: true },
+    { icon: MessageCircle, href: 'https://discord.gg/remifi', label: 'Discord', external: true },
+    { icon: Mail, href: 'mailto:hello@remifi.com', label: 'Email', external: true }
   ];
 
   const supportedTokens = [
@@ -82,13 +82,14 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
             {/* Company Info */}
             <div className="lg:col-span-2">
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <Globe className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold">AfriRemit</span>
-                  <span className="text-xs text-gray-400 -mt-1">Africa’s DeFi Hub</span>
-                </div>
+              <div className="relative">
+              <img 
+                src="https://res.cloudinary.com/ecosheane/image/upload/v1749952368/logo_virjcs.jpg"
+                alt="Remifi Logo"
+                className="w-12 h-12 rounded-xl object-cover transition-all duration-300 group-hover:scale-105"
+              />
+            </div>
+            
               </div>
               <p className="text-gray-400 mb-6 leading-relaxed">
                Africa’s Stablecoin Gateway to the World, built on Lisk blockchain. 
@@ -213,7 +214,7 @@ const Footer: React.FC<FooterProps> = ({ onPageChange }) => {
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="flex items-center space-x-6 mb-4 md:mb-0">
                 <p className="text-gray-400 text-sm">
-                  © 2025 AfriRemit. All rights reserved.
+                  © 2025 RemiFi. All rights reserved.
                 </p>
                 <div className="flex items-center space-x-2 text-xs text-gray-500">
                   <span>Built on</span>

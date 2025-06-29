@@ -53,7 +53,7 @@ const Navbar: React.FC<NavbarProps> = ({ onPageChange }) => {
 
               <div className="flex flex-col">
                 <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  AfriRemit
+                  RemiFi
                 </span>
               </div>
             </Link>

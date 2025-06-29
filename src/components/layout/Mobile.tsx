@@ -86,7 +86,7 @@ const MobileSidebar = ({
                     <span className="text-white font-bold text-xs">A</span>
                   </div>
                   <span className="font-bold text-xl bg-gradient-to-r from-terracotta to-sage bg-clip-text text-transparent">
-                    Remifi
+                    RemiFi
                   </span>
                 </div>
                 <button onClick={() => setSidebarOpen(false)}>
