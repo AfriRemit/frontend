@@ -46,6 +46,12 @@ const Features: React.FC<FeaturesProps> = ({ onPageChange }) => {
               gradient: 'from-yellow-500 to-orange-500'
             },
             {
+              icon: Users,
+              title: 'Community Savings',
+              description: 'Join traditional savings groups with modern blockchain technology',
+              gradient: 'from-yellow-500 to-orange-500'
+            },
+            {
               icon: Gift,
               title: 'Rewards Program',
               description: 'Earn rewards for trading and participating in the ecosystem',

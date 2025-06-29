@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
+import Layout from '../components/layout/Layout';
 import Dashboard from '../components/Dashboard';
 import SendMoney from '../components/SendMoney';
 import SwapInterface from '../components/SwapInterface';

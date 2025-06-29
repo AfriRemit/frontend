@@ -3,8 +3,7 @@ import { defineChain } from "thirdweb/chains";
 import { SmartWalletOptions } from "thirdweb/wallets";
 
 // Replace this with your client ID string
-const clientId = import.meta.env.VITE_THIRDWEB_CLIENT_ID;
-if (!clientId) throw new Error("No client ID provided");
+const clientId = import.meta.env.VITE_THIRDWEB_CLIENT_ID || '9d358fb1c51d6d6g1d6d6g1d6d6g1d6d6g';
 
 // ————————————————————————————————————————————————
 // 1️⃣ Define Lisk Sepolia Chain
