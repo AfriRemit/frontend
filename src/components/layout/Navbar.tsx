@@ -62,8 +62,12 @@ const TopNavbar = ({
 
   // Create Thirdweb client
   const client = createThirdwebClient({ 
-    clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID
+    clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID || '9d358fb1c51d6d6g1d6d6g1d6d6g1d6d6g'
   });
+
+  // Check if client ID is properly configured
+  const isClientConfigured = import.meta.env.VITE_THIRDWEB_CLIENT_ID && 
+    import.meta.env.VITE_THIRDWEB_CLIENT_ID !== '9d358fb1c51d6d6g1d6d6g1d6d6g1d6d6g';
 
   // Primary navigation items (always visible on desktop)
   const primaryNavigation = [
@@ -256,27 +260,34 @@ const TopNavbar = ({
               )}
             </div>
             {/* Thirdweb Connect Button */}
-            <ConnectButton 
-              client={client}
-              connectButton={{
-                label: "Connect",
-                className: "!bg-gradient-to-r !from-terracotta !to-sage !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 hover:!shadow-lg !text-sm"
-              }}
-              detailsButton={{
-                className: "!bg-green-600 !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 !text-sm",
-                displayBalanceToken: {
-                  4202: "0x0000000000000000000000000000000000000000"
-                }
-              }}
-              connectModal={{
-                title: "Connect to Remifi",
-                titleIcon: "https://your-logo-url.com/logo.png",
-                showThirdwebBranding: false,
-              }}
-              switchButton={{
-                label: "Switch Network"
-              }}
-            />
+            {isClientConfigured ? (
+              <ConnectButton 
+                client={client}
+                connectButton={{
+                  label: "Connect",
+                  className: "!bg-gradient-to-r !from-terracotta !to-sage !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 hover:!shadow-lg !text-sm"
+                }}
+                detailsButton={{
+                  className: "!bg-green-600 !text-white !font-medium !px-4 !py-2 !rounded-lg !transition-all !duration-200 !text-sm",
+                  displayBalanceToken: {
+                    4202: "0x0000000000000000000000000000000000000000"
+                  }
+                }}
+                connectModal={{
+                  title: "Connect to Remifi",
+                  titleIcon: "https://your-logo-url.com/logo.png",
+                  showThirdwebBranding: false,
+                }}
+                switchButton={{
+                  label: "Switch Network"
+                }}
+              />
+            ) : (
+              <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+                <div className="font-medium">Using fallback Thirdweb client</div>
+                <div className="text-xs">For production, add VITE_THIRDWEB_CLIENT_ID to .env</div>
+              </div>
+            )}
           </div>
           {/* Hamburger menu for mobile */}
           <div className="lg:hidden ml-auto">

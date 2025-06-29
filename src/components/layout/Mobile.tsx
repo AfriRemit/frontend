@@ -44,7 +44,7 @@ const MobileSidebar = ({
 }: MobileSidebarProps) => {
   // Create Thirdweb client
   const client = createThirdwebClient({ 
-    clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID
+    clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID || '9d358fb1c51d6d6g1d6d6g1d6d6g1d6d6g'
   });
 
   // Primary navigation items (always visible on desktop)
