@@ -3,9 +3,7 @@ import Navbar from './Navbar';
 import HeroSection from './HeroSection';
 import Features from './Features';
 import TrustedPartners from './Partner';
-// import Stats from './Stats';
-// import Testimonials from './Testimonials';
-// import Contact from './Contact';
+
 import Footer from './Footer';
 
 interface LandingPageProps {
@@ -22,7 +20,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onPageChange }) => {
       <TrustedPartners />
       {/* <Testimonials /> */}
       {/* <Contact /> */}
-      <Footer />
+      <Footer onPageChange={onPageChange} />
     </div>
   );
 };

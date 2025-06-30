@@ -22,7 +22,7 @@ const Navbar: React.FC<NavbarProps> = ({ onPageChange }) => {
     { name: 'Home', href: '#home' },
     { name: 'Features', href: '#features' },
     { name: 'About', href: '#about' },
-    { name: 'Partners', href: '#partners' },
+    { name: 'Academy', href: '#courses' },
     // { name: 'Contact', href: '#contact' },
   ];
 
@@ -40,9 +40,9 @@ const Navbar: React.FC<NavbarProps> = ({ onPageChange }) => {
       }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-4 mb-2 lg:px-8">
         <div className="flex items-center justify-between h-18">
-          {/* Logo */}
-          <div className="flex items-center curser-pointer space-x-3 group">
-            <Link to="/" className="flex items-center space-x-3">
+          {/* Logo and Desktop Navigation (inline) */}
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-2">
               <div className="relative">
                 <img
                   src="https://res.cloudinary.com/ecosheane/image/upload/v1749952368/logo_virjcs.jpg"
@@ -50,27 +50,31 @@ const Navbar: React.FC<NavbarProps> = ({ onPageChange }) => {
                   className="w-12 h-12 rounded-xl object-cover transition-all duration-300 group-hover:scale-105"
                 />
               </div>
-
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  RemiFi
-                </span>
-              </div>
+              <span className="text-2xl font-bold text-gray-900">RemiFi</span>
             </Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item, index) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="relative px-4 py-2 text-gray-700 hover:text-orange-600 transition-all duration-300 font-medium rounded-lg hover:bg-orange-50 group"
-              >
-                <span className="relative z-10">{item.name}</span>
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-              </a>
-            ))}
+            {/* Desktop Navigation - now inline with logo */}
+            <div className="hidden md:flex items-center space-x-1 ml-4">
+              {navItems.map((item, index) => (
+                item.name === 'Academy' ? (
+                  <button
+                    key={item.name}
+                    onClick={() => onPageChange ? onPageChange('academy') : window.location.assign('/app/academy')}
+                    className="relative px-4 py-2 text-gray-700 hover:text-orange-600 transition-all duration-300 font-medium rounded-lg group bg-transparent border-none outline-none"
+                    style={{ background: 'none' }}
+                  >
+                    <span className="relative z-10">{item.name}</span>
+                  </button>
+                ) : (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="relative px-4 py-2 text-gray-700 hover:text-orange-600 transition-all duration-300 font-medium rounded-lg group"
+                  >
+                    <span className="relative z-10">{item.name}</span>
+                  </a>
+                )
+              ))}
+            </div>
           </div>
 
           {/* Launch DApp Button */}

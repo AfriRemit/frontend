@@ -16,6 +16,8 @@ import AdminInterface from '@/components/Admin';
 import UtilityPaymentInterface from '../components/UtilityInterface';
 import GaslessHome from '../components/Test';
 import LandingPage from '../components/home/index';
+import AcademyIndex from '../components/academy/Index';
+import CourseDetailPage from '../components/academy/DetialCourse';
 
 // Route configuration
 const routes = {
@@ -74,6 +76,14 @@ const routes = {
   admin: {
     component: AdminInterface,
     requiresLayout: true,
+  },
+  academy: {
+    component: AcademyIndex,
+    requiresLayout: false,
+  },
+  courseDetail: {
+    component: CourseDetailPage,
+    requiresLayout: false,
   },
 } as const;
 
@@ -140,7 +150,13 @@ const Index = () => {
     }
 
     const Component = route.component;
-    return <Component onPageChange={handlePageChange} />;
+    if (currentPage === 'courseDetail') {
+      return <Component />;
+    }
+    if (Component === LandingPage || Component === AcademyIndex) {
+      return <Component onPageChange={handlePageChange} />;
+    }
+    return <Component />;
   };
 
   const route = routes[currentPage];
