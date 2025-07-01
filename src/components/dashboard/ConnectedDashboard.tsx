@@ -74,17 +74,17 @@ const ConnectedDashboard: React.FC<ConnectedDashboardProps> = ({
             <div className="space-y-2">
               <div className="text-4xl font-bold">
                 {balanceVisible
-                  ? `${currencySymbol} ${bal1?.toLocaleString() || 0}`
+                  ? `${currencySymbol} ${(bal1 ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                   : '••••••••'}
               </div>
               <div className="text-slate-300 text-lg">
                 {balanceVisible 
-                  ? `≈ $${usdValue.toLocaleString()} USD`
+                  ? `≈ $${usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
                   : '≈ $••••••••'
                 }
               </div>
               <div className="text-sm text-slate-400">
-                {balanceVisible && `Rate: $${currentTokenPrice.toFixed(6)}`}
+                {balanceVisible && `Rate: $${currentTokenPrice.toFixed(2)}`}
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@ const ConnectedDashboard: React.FC<ConnectedDashboardProps> = ({
                       <div className={`w-2 h-2 rounded-full ${typedData.positive === true ? 'bg-emerald-500' : typedData.positive === false ? 'bg-red-500' : 'bg-slate-400'}`}></div>
                     </div>
                     <div className="text-sm text-slate-500 mb-2">{details?.country}</div>
-                    <div className="text-xl font-bold text-slate-900 mb-2">${typedData.rate.toFixed(6)}</div>
+                    <div className="text-xl font-bold text-slate-900 mb-2">${typedData.rate.toFixed(2)}</div>
                     <div className="flex items-center justify-between">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
                         typedData.positive === true ? 'text-emerald-700 bg-emerald-100' : 
